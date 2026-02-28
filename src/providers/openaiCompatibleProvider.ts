@@ -6,6 +6,14 @@ interface OpenAiCompletionResponse {
   choices?: Array<{ message?: { content?: string } }>;
 }
 
+const blobToDataUrl = (blob: Blob): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error('Unable to read image payload.'));
+    reader.readAsDataURL(blob);
+  });
+
 export class OpenAiCompatibleProvider implements ChatProvider {
   id = 'openai-compatible-bridge' as const;
   label = 'Bridge: OpenAI-compatible';
@@ -102,8 +110,35 @@ export class OpenAiCompatibleProvider implements ChatProvider {
     throw new Error('Bridge transcription endpoint contract not configured yet.');
   }
 
+  async describeImage(imageBlob: Blob, options?: { prompt?: string }): Promise<string> {
+    const dataUrl = await blobToDataUrl(imageBlob);
+    const prompt = options?.prompt?.trim() || 'Describe this image for a private memory note.';
 
-  async describeImage(): Promise<string> {
-    throw new Error('OpenAI-compatible image description endpoint is not configured yet.');
+    const response = await fetch(this.endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(this.context?.settings.apiKey ? { Authorization: `Bearer ${this.context.settings.apiKey}` } : {})
+      },
+      body: JSON.stringify({
+        model: this.context?.settings.modelName || OPENAI_FALLBACK_MODEL,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: prompt },
+              { type: 'image_url', image_url: { url: dataUrl } }
+            ]
+          }
+        ]
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Image description failed on bridge endpoint. Check model vision support and API compatibility.');
+    }
+
+    const data = (await response.json()) as OpenAiCompletionResponse;
+    return data.choices?.[0]?.message?.content?.trim() || 'No image description returned by bridge provider.';
   }
 }

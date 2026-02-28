@@ -9,22 +9,23 @@ interface MemoryPageProps {
   messages: ChatMessage[];
   summary: MemorySummary | null;
   voiceNotes: VoiceNote[];
-  imageMemories: ImageMemory[];
+  imageMemories?: string[];
   onDeleteVoiceNote: (id: string) => Promise<void>;
   onDeleteImageMemory: (id: string) => Promise<void>;
 }
 
 const snippet = (text: string, max = 140) => (text.length <= max ? text : `${text.slice(0, max)}...`);
 
-export const MemoryPage = ({ messages, summary, voiceNotes, imageMemories, onDeleteVoiceNote, onDeleteImageMemory }: MemoryPageProps) => {
+export const MemoryPage = ({ messages, summary, voiceNotes, imageMemories = [], onDeleteVoiceNote }: MemoryPageProps) => {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<'all' | 'chat' | 'summary' | 'voice' | 'image'>('all');
 
-  const transcriptMessages = voiceNotes.filter((note) => note.transcript).map((note) => ({ id: `voice-${note.id}`, role: 'assistant' as const, content: note.transcript ?? '', createdAt: note.createdAt }));
-  const imageTextMessages = imageMemories.map((image) => ({ id: `image-${image.id}`, role: 'assistant' as const, content: [image.caption, image.notes, image.ocrText, image.analysisSummary].filter(Boolean).join(' ').trim(), createdAt: image.createdAt })).filter((entry) => entry.content);
+  const transcriptMemories = voiceNotes.map((note) => note.transcript).filter((text): text is string => Boolean(text));
 
-  const searchable = [...messages, ...transcriptMessages, ...imageTextMessages];
-  const matches = useMemo(() => searchMessages(searchable, query), [searchable, query]);
+  const matches = useMemo(
+    () => searchMessages(messages, query, { transcriptMemories, imageMemories }),
+    [messages, query, transcriptMemories, imageMemories]
+  );
 
   return (
     <section className="panel">
@@ -37,18 +38,13 @@ export const MemoryPage = ({ messages, summary, voiceNotes, imageMemories, onDel
       </article>
 
       <article className="card">
-        <h3>Filter & Search</h3>
-        <label className="settings-row">
-          <span>Type filter</span>
-          <select value={filter} onChange={(event) => setFilter(event.target.value as typeof filter)}>
-            <option value="all">All</option>
-            <option value="chat">Chat</option>
-            <option value="summary">Summary</option>
-            <option value="voice">Voice</option>
-            <option value="image">Image</option>
-          </select>
-        </label>
-        <input className="search-input" placeholder="Search text fields" value={query} onChange={(event) => setQuery(event.target.value)} />
+        <h3>Search Memory</h3>
+        <input
+          className="search-input"
+          placeholder="Search messages, transcripts, and image memories"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+        />
         {query.trim() ? (
           <ul className="memory-list compact">
             {matches.length ? matches.map((message) => <li key={message.id}><strong>{message.id.split('-')[0]}</strong><span>{snippet(message.content)}</span></li>) : <li><span className="helper-text">No matches yet.</span></li>}

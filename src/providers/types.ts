@@ -29,7 +29,7 @@ export interface ChatProvider {
   getModelList?: () => Promise<string[]>;
   testConnection?: () => Promise<{ ok: boolean; message: string }>;
   transcribeAudio?: (audioBlob: Blob, options?: { language?: string }) => Promise<string>;
-  describeImage?: (imageBlob: Blob, prompt?: string) => Promise<string>;
+  describeImage?: (imageBlob: Blob, options?: { prompt?: string }) => Promise<string>;
 }
 
 export interface ProviderGenerateRequest {

@@ -323,10 +323,8 @@ export const App = () => {
     setTrustedDevices(await getTrustedDevices());
   };
 
-  const transcriptMemories = useMemo(
-    () => voiceNotes.map((note) => note.transcript).filter((text): text is string => Boolean(text)),
-    [voiceNotes]
-  );
+  const transcriptMemories = voiceNotes.map((note) => note.transcript).filter((text): text is string => Boolean(text));
+  const imageMemories: string[] = [];
 
   return (
     <Routes>
@@ -368,8 +366,10 @@ export const App = () => {
             />
           }
         />
-        <Route path="/capture" element={<CapturePage images={imageMemories} onSaveImage={onSaveImage} onUpdateImage={onUpdateImage} onDeleteImage={onDeleteImage} onAttachImageToChat={onAttachImageToChat} />} />
-        <Route path="/memory" element={<MemoryPage messages={messages} summary={summary} voiceNotes={voiceNotes} imageMemories={imageMemories} onDeleteVoiceNote={onDeleteVoiceNote} onDeleteImageMemory={onDeleteImage} />} />
+        <Route
+          path="/memory"
+          element={<MemoryPage messages={messages} summary={summary} voiceNotes={voiceNotes} imageMemories={imageMemories} onDeleteVoiceNote={onDeleteVoiceNote} />}
+        />
         <Route
           path="/settings"
           element={

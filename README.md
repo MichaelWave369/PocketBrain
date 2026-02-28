@@ -1,82 +1,84 @@
 # PocketBrain v0.5.0
 
-PocketBrain is a phone-first, local-first PWA personal AI brain: it can listen, speak, see, remember, and privately sync across trusted devices.
+PocketBrain is a **private, phone-first, local-first AI brain**.
 
-## Core principles
-- Local memory and retrieval first
-- Optional bridge to stronger models you control
-- Pairing-first sync, not cloud-account lock-in
-- No hidden telemetry
+It prioritizes on-device memory and retrieval, with optional user-controlled bridge mode when you want a stronger remote model.
 
-## What's new in v0.5.0
-- **Voice output (TTS):** assistant replies can be spoken with browser-native voices and per-message Speak controls.
-- **Camera-to-memory ingestion:** capture or upload images, store locally, annotate, and include text fields in retrieval.
-- **Private device sync foundation:** trusted-device pairing UI and manual-first sync workflow with versioned protocol envelopes.
+## Core product behavior
+- **Local-first by default**: WebLLM runs in-browser, memory stays in IndexedDB.
+- **Private memory loop**: pinned summary + recency + retrieval over local messages.
+- **Optional bridge mode**: send compiled prompts only to endpoints you configure.
+- **Voice notes**: capture audio locally; use browser speech recognition when available.
+- **Trusted-device sync foundation**: pairing payloads + trusted bridge endpoint history.
+- **Encrypted backup/restore**: PBKDF2 + AES-GCM in browser.
+- **PWA + GitHub Pages** deployment support.
 
-## Existing capabilities retained
-- Local WebLLM mode
-- Bridge mode (Ollama + OpenAI-compatible)
-- Voice input with graceful transcription fallback
-- Pairing-first LAN bridge discovery
-- Encrypted backup/restore
-- GitHub Actions lockfile fix
+## Modes
+### 1) Local WebLLM mode (default)
+- Provider: `local-webllm`
+- No bridge endpoint needed
+- Memory/retrieval stay on device
 
-## Setup
+### 2) Bridge mode (optional)
+- Providers: `ollama-bridge`, `openai-compatible-bridge`
+- Endpoint, model, and key are user-configured
+- Retrieval remains local; only final prompt is sent to the bridge
+- Fallback-to-local is supported when bridge init fails
+
+## Voice notes and transcription
+- Microphone capture always stores voice note locally.
+- If browser speech recognition exists, transcript is inserted into draft.
+- If not available, note is still saved and shown as non-transcribed.
+- Bridge transcription is explicit/manual and provider-dependent.
+
+## TTS
+- The app currently focuses on text responses and voice input.
+- Browser/provider TTS playback is not yet fully integrated into the default UX.
+
+## Image capture and image memory indexing
+- Image-memory retrieval hooks are now present in retrieval/search contracts.
+- Full camera capture + persistent image memory UX is still in-progress.
+
+## Trusted devices / sync foundation
+- Pairing-first bridge workflow includes:
+  - trusted endpoint history
+  - pairing payload/file import/export
+  - explicit known-host probe (no blind subnet scans)
+- This is a foundation for future trusted-device sync experiences.
+
+## Encrypted backup and restore
+- Export plain or encrypted backup packages.
+- Encrypted packages use browser Web Crypto (`PBKDF2` + `AES-GCM`).
+- Import supports merge/replace mode.
+- Wrong passphrase fails safely.
+
+## Local setup
 ```bash
 npm ci
 npm run dev
 ```
 
-Checks and build:
+## Verification / release checks
 ```bash
 npm run lint
 npm run build
+npm run verify
 ```
 
-## Bridge vs Sync
-- **Bridge** sends prompts to a configured model endpoint (LAN/server).
-- **Sync** keeps PocketBrain data aligned between trusted devices.
+`npm run verify` is a lightweight CI-safe integration check that catches contract drift between retrieval/provider interfaces.
 
-Bridge sends prompts only to endpoints you explicitly configure.
+## GitHub Pages deployment
+1. Push to `main`
+2. Enable Pages source = GitHub Actions
+3. Actions build and deploy `dist`
 
-## Camera and image memory
-- Capture from camera or upload files.
-- Images are saved locally with metadata.
-- Search works only from text fields (caption/notes/OCR/analysis), not raw pixels.
+## Current limitations
+- Large WebLLM bundles produce large PWA assets; initial load can be heavy on low-end phones.
+- Bridge transcription and bridge image-description support depend on endpoint model capability and API compatibility.
+- Full camera-to-memory workflow is not yet complete in the UI.
 
-## TTS support notes
-- Uses browser SpeechSynthesis.
-- Voice list can load asynchronously.
-- If unsupported/no voices, chat continues normally.
-
-## GitHub Actions lockfile fix
-- Root `package-lock.json` committed.
-- `actions/setup-node@v4` + Node 20 + npm cache + `cache-dependency-path: package-lock.json`.
-- Install uses `npm ci`.
-
-## GitHub Pages
-Push to `main` with Pages source set to GitHub Actions; workflow builds and deploys `dist`.
-
-## Troubleshooting
-- **Microphone denied:** allow mic permissions for site.
-- **Speech recognition unavailable:** voice note still saves locally; transcription may be unavailable.
-- **No voices available:** browser/OS may not expose TTS voices.
-- **Speech interrupted:** backgrounding tab or audio focus can pause speech.
-- **Camera denied:** allow camera permission and retry capture.
-- **Image too large:** use smaller image or compression preference.
-- **Bridge discovery blocked / CORS:** check local-network permission, firewall, and endpoint CORS config.
-- **Sync pairing failure:** re-pair using fresh payload/QR and ensure both apps are active.
-- **Encrypted backup wrong passphrase:** decryption fails safely; retry with exact passphrase.
-- **Actions lockfile error:** commit root lockfile, use `npm ci`, set `cache-dependency-path: package-lock.json`.
-
-## Docs
-- `docs/ARCHITECTURE.md`
-- `docs/PRIVACY.md`
-- `docs/ROADMAP.md`
-- `docs/BRIDGE_PAIRING.md`
-- `docs/TTS.md`
-- `docs/CAPTURE.md`
-- `docs/SYNC.md`
+## Privacy
+No hidden telemetry. Bridge mode sends prompts only to endpoints you explicitly configure.
 
 ## License
 Apache-2.0

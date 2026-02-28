@@ -1,24 +1,42 @@
-const ITERATIONS = 150000;
-
+const ITERATIONS = 150_000;
 const encoder = new TextEncoder();
+const decoder = new TextDecoder();
 
-const toBase64 = (value: Uint8Array): string => btoa(String.fromCharCode(...value));
-const fromBase64 = (value: string): Uint8Array => Uint8Array.from(atob(value), (char) => char.charCodeAt(0));
+const toBase64 = (value: Uint8Array): string =>
+  btoa(String.fromCharCode(...value));
 
-const deriveKey = async (passphrase: string, salt: Uint8Array): Promise<CryptoKey> => {
-  const keyMaterial = await crypto.subtle.importKey('raw', encoder.encode(passphrase), 'PBKDF2', false, ['deriveKey']);
+const fromBase64 = (value: string): Uint8Array =>
+  Uint8Array.from(atob(value), (char) => char.charCodeAt(0));
+
+const toArrayBuffer = (value: Uint8Array): ArrayBuffer =>
+  value.buffer.slice(
+    value.byteOffset,
+    value.byteOffset + value.byteLength,
+  ) as ArrayBuffer;
+
+const deriveKey = async (
+  passphrase: string,
+  salt: Uint8Array,
+): Promise<CryptoKey> => {
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    toArrayBuffer(encoder.encode(passphrase)),
+    'PBKDF2',
+    false,
+    ['deriveKey'],
+  );
 
   return crypto.subtle.deriveKey(
     {
       name: 'PBKDF2',
-      salt: salt as BufferSource,
+      salt: toArrayBuffer(salt),
       iterations: ITERATIONS,
-      hash: 'SHA-256'
+      hash: 'SHA-256',
     },
     keyMaterial,
     { name: 'AES-GCM', length: 256 },
     false,
-    ['encrypt', 'decrypt']
+    ['encrypt', 'decrypt'],
   );
 };
 
@@ -27,7 +45,11 @@ export const encryptJson = async (payload: string, passphrase: string) => {
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const key = await deriveKey(passphrase, salt);
 
-  const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv as BufferSource }, key, encoder.encode(payload));
+  const ciphertext = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv: toArrayBuffer(iv) },
+    key,
+    toArrayBuffer(encoder.encode(payload)),
+  );
 
   return {
     cipher: 'AES-GCM' as const,
@@ -35,23 +57,28 @@ export const encryptJson = async (payload: string, passphrase: string) => {
     iterations: ITERATIONS,
     salt: toBase64(salt),
     iv: toBase64(iv),
-    payload: toBase64(new Uint8Array(ciphertext))
+    payload: toBase64(new Uint8Array(ciphertext)),
   };
 };
 
 export const decryptJson = async (
-  encrypted: { salt: string; iv: string; payload: string; iterations: number },
-  passphrase: string
+  encrypted: {
+    salt: string;
+    iv: string;
+    payload: string;
+    iterations: number;
+  },
+  passphrase: string,
 ): Promise<string> => {
   const salt = fromBase64(encrypted.salt);
   const iv = fromBase64(encrypted.iv);
   const key = await deriveKey(passphrase, salt);
 
   const decrypted = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv: iv as BufferSource },
+    { name: 'AES-GCM', iv: toArrayBuffer(iv) },
     key,
-    fromBase64(encrypted.payload) as BufferSource
+    toArrayBuffer(fromBase64(encrypted.payload)),
   );
 
-  return new TextDecoder().decode(decrypted);
+  return decoder.decode(decrypted);
 };
