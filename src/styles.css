@@ -324,3 +324,75 @@ button:disabled {
   margin: 0.4rem 0 0;
   color: #cbd5e1;
 }
+
+.settings-panel {
+  overflow-y: auto;
+  min-height: calc(100dvh - 185px);
+}
+
+.voice-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.voice-elapsed {
+  font-size: 0.8rem;
+  color: #f8fafc;
+}
+
+.voice-wave {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 16px;
+}
+
+.voice-wave span {
+  width: 3px;
+  border-radius: 999px;
+  background: #60a5fa;
+  height: 4px;
+}
+
+.voice-wave.active span {
+  animation: voice-bounce 0.9s ease-in-out infinite;
+}
+
+@keyframes voice-bounce {
+  0%,
+  100% {
+    height: 4px;
+  }
+  50% {
+    height: 16px;
+  }
+}
+
+.voice-note-strip {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.backup-grid {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.probe-results {
+  white-space: pre-wrap;
+  margin: 0.5rem 0 0;
+  background: #020617;
+  border: 1px solid #1e293b;
+  border-radius: 10px;
+  padding: 0.5rem;
+  color: #cbd5e1;
+  font-size: 0.8rem;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid #1e293b;
+  margin: 0.9rem 0;
+}

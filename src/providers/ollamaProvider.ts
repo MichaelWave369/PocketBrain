@@ -100,4 +100,8 @@ export class OllamaProvider implements ChatProvider {
       };
     }
   }
+
+  async transcribeAudio(): Promise<string> {
+    throw new Error('Ollama transcription bridge is not implemented yet.');
+  }
 }

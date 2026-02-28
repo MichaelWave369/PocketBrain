@@ -1,72 +1,82 @@
-# PocketBrain v0.3.0
+# PocketBrain v0.4.0
 
-PocketBrain is a phone-first Progressive Web App (PWA) starter for private memory-first chat.
+PocketBrain is a phone-first PWA for private memory-first AI chat.
 
-## Core idea: Small phone, big brain
+## Small phone, big brain
+PocketBrain keeps memory and retrieval local on your phone, and can optionally route final prompts to a trusted LAN bridge model.
 
-PocketBrain keeps **memory + retrieval local** on your phone, and can optionally borrow stronger reasoning from your LAN/home-lab model endpoint.
+## What’s new in v0.4.0
+- Voice input with recording states, cancel/retry, elapsed timer, and graceful fallback when browser transcription is unavailable.
+- Pairing-first bridge discovery (manual entry, trusted recents, pairing payload/file import/export, explicit known-host probe).
+- Encrypted backup and restore (Web Crypto AES-GCM + PBKDF2) with merge/replace import modes.
+- Voice notes stored locally, playable in Memory page, searchable only when transcript exists.
 
 ## Modes
-
-### 1) Local Mode (default, privacy-first)
-- In-browser WebLLM inference
-- IndexedDB local memory
+### Local mode (default)
+- WebLLM in browser
+- Local IndexedDB memory and retrieval
 - No remote prompt transfer
 
-### 2) Bridge Mode (optional)
-- Route final compiled prompt to a user-configured endpoint:
-  - Ollama on LAN (`http://192.168.x.x:11434`)
-  - OpenAI-compatible server (`http://192.168.x.x:8000/v1`)
-- Memory and retrieval remain local; only final prompt leaves the device
+### Bridge mode (optional)
+- Ollama bridge on LAN
+- OpenAI-compatible bridge endpoint
+- Memory and retrieval stay local; only compiled prompt is sent to endpoint configured by user
 
-## v0.3.0 highlights
-- Bridge provider architecture (Local WebLLM / Ollama / OpenAI-compatible)
-- Streaming chat UX retained with unified provider routing
-- Provider badge in chat header
-- Bridge connection test in settings
-- GitHub Actions lockfile/caching fix for npm
-
-## Local development
-
+## Setup
 ```bash
 npm ci
-npm run lint
-npm run build
 npm run dev
 ```
 
-## LAN Ollama quick setup
-1. Run Ollama on your PC/server (`ollama serve`).
-2. Ensure phone and host are on same network.
-3. In PocketBrain Settings:
-   - Provider: **Ollama Bridge**
-   - Endpoint: `http://<LAN-IP>:11434`
-   - Model: e.g. `llama3.2:3b`
-4. Use **Test Bridge Connection**.
+Build and checks:
+```bash
+npm run lint
+npm run build
+```
 
-> If browser CORS blocks direct Ollama access, use a tiny local proxy in front of Ollama (documented in `docs/PRIVACY.md`), then point PocketBrain to that proxy.
+## GitHub Actions lockfile fix (kept)
+- Root `package-lock.json` is committed.
+- Workflow uses `npm ci`.
+- setup-node cache points at `cache-dependency-path: package-lock.json`.
 
-## GitHub Actions lockfile fix summary
-- Commit `package-lock.json` at repo root.
-- Use `npm ci` in CI.
-- Configure setup-node cache with:
-  - `cache: npm`
-  - `cache-dependency-path: package-lock.json`
+## Pairing-first LAN discovery
+- Manual bridge endpoint entry
+- Reconnect recent successful endpoint
+- Pairing file import/export (JSON)
+- QR payload copy/paste path
+- Explicit known-host probe only after user action (no blind subnet scan)
+
+## Voice input notes
+- Browser asks for microphone permission.
+- On supported browsers, speech recognition can insert transcript to draft.
+- On unsupported browsers, voice note is still saved locally and clearly marked as non-transcribed.
+- Bridge transcription is explicit/manual and currently stubbed by provider contract.
+
+## Local network permission notes
+Some browsers gate LAN calls behind local-network permission. If denied, bridge probes fail with clear errors.
+
+## Encrypted backups
+- Plain `.pocketbrain.json` export
+- Encrypted `.pocketbrain.enc.json` export
+- Encrypted export requires passphrase + confirmation
+- Wrong passphrase on import fails safely
+- Losing passphrase means encrypted backup cannot be recovered
 
 ## GitHub Pages deployment
-1. Push to `main`.
-2. In repo settings, set Pages source to **GitHub Actions**.
-3. Workflow builds and deploys static output from `dist`.
+1. Push to `main`
+2. Enable Pages source = GitHub Actions
+3. Workflow builds and deploys `dist`
 
 ## Troubleshooting
-### “Dependencies lock file is not found” in GitHub Actions
-Fix:
-1. Commit `package-lock.json` at repository root.
-2. Use `npm ci` (not `npm install`) in workflows.
-3. Set `cache-dependency-path: package-lock.json` in `actions/setup-node`.
+- **Microphone denied**: re-enable mic permission in browser site settings.
+- **Speech recognition unavailable**: browser does not expose speech API; voice note is saved without transcript.
+- **Bridge discovery blocked**: local-network permission or firewall blocked access.
+- **CORS failure to LAN bridge**: configure bridge/proxy CORS headers.
+- **Encrypted backup wrong passphrase**: import fails safely; retry with correct passphrase.
+- **Actions lockfile issue**: keep root `package-lock.json`, use `npm ci`, and `cache-dependency-path: package-lock.json`.
 
-## Privacy note
-PocketBrain sends prompts only to endpoints explicitly configured by the user in Bridge Mode. No hidden telemetry.
+## Privacy
+No hidden telemetry. Bridge mode sends prompts only to the endpoint you explicitly configure.
 
 ## License
-Apache-2.0. See [LICENSE](./LICENSE).
+Apache-2.0

@@ -1,4 +1,7 @@
 import { useState, type ChangeEvent } from 'react';
+import { BridgePairingPanel } from '../components/BridgePairingPanel';
+import { BackupPanel } from '../components/BackupPanel';
+import type { BackupData, ImportMode } from '../backup/types';
 import type { AppSettings, DeviceDiagnostics } from '../types';
 
 interface SettingsPageProps {
@@ -6,11 +9,14 @@ interface SettingsPageProps {
   modelOptions: string[];
   providerOptions: Array<{ value: AppSettings['providerType']; label: string }>;
   diagnostics: DeviceDiagnostics;
+  trustedBridgeEndpoints: string[];
   onSettingsChange: (next: AppSettings) => void;
-  onExport: () => Promise<void>;
-  onImport: (file: File) => Promise<void>;
   onResetModel: () => Promise<void>;
   onTestBridgeConnection: () => Promise<{ ok: boolean; message: string }>;
+  onApplyPairing: (patch: Partial<AppSettings>) => void;
+  onExportData: () => Promise<BackupData>;
+  onImportData: (data: BackupData, mode: ImportMode) => Promise<void>;
+  onClearData: (scope: 'chats' | 'summaries' | 'voice' | 'bridges' | 'all') => Promise<void>;
 }
 
 export const SettingsPage = ({
@@ -18,23 +24,16 @@ export const SettingsPage = ({
   modelOptions,
   providerOptions,
   diagnostics,
+  trustedBridgeEndpoints,
   onSettingsChange,
-  onExport,
-  onImport,
   onResetModel,
-  onTestBridgeConnection
+  onTestBridgeConnection,
+  onApplyPairing,
+  onExportData,
+  onImportData,
+  onClearData
 }: SettingsPageProps) => {
   const [connectionStatus, setConnectionStatus] = useState<string | null>(null);
-
-  const handleImportChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) {
-      return;
-    }
-
-    await onImport(file);
-    event.target.value = '';
-  };
 
   const isBridgeProvider = settings.providerType !== 'local-webllm';
 
@@ -47,7 +46,7 @@ export const SettingsPage = ({
   };
 
   return (
-    <section className="panel">
+    <section className="panel settings-panel">
       <h2>Settings</h2>
 
       <article className="card">
@@ -101,64 +100,84 @@ export const SettingsPage = ({
       </article>
 
       {isBridgeProvider ? (
-        <article className="card">
-          <label className="settings-field">
-            <span>Bridge endpoint URL</span>
-            <input
-              placeholder={bridgePlaceholder}
-              value={settings.bridgeEndpointUrl}
-              onChange={(event) => onSettingsChange({ ...settings, bridgeEndpointUrl: event.target.value })}
-            />
-          </label>
+        <>
+          <article className="card">
+            <label className="settings-field">
+              <span>Bridge endpoint URL</span>
+              <input
+                placeholder={bridgePlaceholder}
+                value={settings.bridgeEndpointUrl}
+                onChange={(event) => onSettingsChange({ ...settings, bridgeEndpointUrl: event.target.value })}
+              />
+            </label>
 
-          <label className="settings-field">
-            <span>Bridge model name</span>
-            <input
-              placeholder={settings.providerType === 'ollama-bridge' ? 'llama3.2:3b' : 'gpt-4o-mini'}
-              value={settings.bridgeModelName}
-              onChange={(event) => onSettingsChange({ ...settings, bridgeModelName: event.target.value })}
-            />
-          </label>
+            <label className="settings-field">
+              <span>Bridge model name</span>
+              <input
+                placeholder={settings.providerType === 'ollama-bridge' ? 'llama3.2:3b' : 'gpt-4o-mini'}
+                value={settings.bridgeModelName}
+                onChange={(event) => onSettingsChange({ ...settings, bridgeModelName: event.target.value })}
+              />
+            </label>
 
-          <label className="settings-field">
-            <span>API key (optional)</span>
-            <input
-              type="password"
-              placeholder="sk-..."
-              value={settings.bridgeApiKey}
-              onChange={(event) => onSettingsChange({ ...settings, bridgeApiKey: event.target.value })}
-            />
-          </label>
+            <label className="settings-field">
+              <span>API key (optional)</span>
+              <input
+                type="password"
+                placeholder="sk-..."
+                value={settings.bridgeApiKey}
+                onChange={(event) => onSettingsChange({ ...settings, bridgeApiKey: event.target.value })}
+              />
+            </label>
 
-          <label className="settings-row">
-            <span>Remember bridge settings locally</span>
-            <input
-              type="checkbox"
-              checked={settings.rememberBridgeSettings}
-              onChange={(event) => onSettingsChange({ ...settings, rememberBridgeSettings: event.target.checked })}
-            />
-          </label>
+            <label className="settings-row">
+              <span>Remember this bridge</span>
+              <input
+                type="checkbox"
+                checked={settings.rememberBridgeSettings}
+                onChange={(event) => onSettingsChange({ ...settings, rememberBridgeSettings: event.target.checked })}
+              />
+            </label>
 
-          <label className="settings-row">
-            <span>Use bridge only when local model unavailable</span>
-            <input
-              type="checkbox"
-              checked={settings.bridgeFallbackToLocal}
-              onChange={(event) => onSettingsChange({ ...settings, bridgeFallbackToLocal: event.target.checked })}
-            />
-          </label>
+            <label className="settings-row">
+              <span>Use bridge only when local model unavailable</span>
+              <input
+                type="checkbox"
+                checked={settings.bridgeFallbackToLocal}
+                onChange={(event) => onSettingsChange({ ...settings, bridgeFallbackToLocal: event.target.checked })}
+              />
+            </label>
 
-          <button className="ghost" onClick={() => void handleConnectionTest()}>
-            Test Bridge Connection
-          </button>
-          {connectionStatus ? <p className="helper-text">{connectionStatus}</p> : null}
+            <div className="settings-actions">
+              <button className="ghost" onClick={() => void handleConnectionTest()}>
+                Test Bridge Connection
+              </button>
+              {trustedBridgeEndpoints[0] ? (
+                <button
+                  className="ghost"
+                  onClick={() =>
+                    onApplyPairing({
+                      bridgeEndpointUrl: trustedBridgeEndpoints[0]
+                    })
+                  }
+                >
+                  Reconnect recent endpoint
+                </button>
+              ) : null}
+            </div>
 
-          <p className="helper-text">
-            {settings.providerType === 'ollama-bridge'
-              ? 'Ollama bridge note: run Ollama on a LAN machine, ensure browser reachability, and configure CORS if needed.'
-              : 'OpenAI-compatible bridge note: endpoint should expose /v1/chat/completions. No telemetry is sent by PocketBrain.'}
-          </p>
-        </article>
+            {connectionStatus ? <p className="helper-text">{connectionStatus}</p> : null}
+            <p className="helper-text">
+              Pairing-first discovery: no blind subnet scanning. Probe runs only after you explicitly tap it.
+            </p>
+          </article>
+
+          <BridgePairingPanel
+            settings={settings}
+            onApplyPairing={onApplyPairing}
+            lastSuccessfulBridge={trustedBridgeEndpoints[0] ?? null}
+          />
+        </>
       ) : null}
 
       <article className="card">
@@ -207,14 +226,9 @@ export const SettingsPage = ({
         </ul>
       </article>
 
+      <BackupPanel onExportData={onExportData} onImportData={onImportData} onClearData={onClearData} />
+
       <article className="card settings-actions">
-        <button className="ghost" onClick={() => void onExport()}>
-          Export memory
-        </button>
-        <label className="ghost import-button">
-          Import memory
-          <input type="file" accept="application/json" onChange={(event) => void handleImportChange(event)} />
-        </label>
         <button className="ghost" onClick={() => void onResetModel()}>
           Reset model runtime
         </button>

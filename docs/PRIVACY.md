@@ -1,17 +1,23 @@
 # Privacy
 
-PocketBrain defaults to local-first privacy.
+PocketBrain defaults to local-only memory and retrieval.
 
-## Local mode
-- Inference, memory, and retrieval are local to the browser/device.
-- Chat history lives in IndexedDB.
+## Local-first behavior
+- Messages, summaries, settings, voice notes, and trusted bridges are stored in browser IndexedDB.
+- No analytics or hidden telemetry are shipped.
 
 ## Bridge mode
-- Prompts are sent only to the endpoint configured by the user.
-- Memory storage and retrieval still remain local.
-- PocketBrain does not include hidden telemetry.
+- Prompts are sent only to endpoints explicitly configured by the user.
+- Bridge pairing/discovery is user-driven; there is no blind subnet scanning.
 
-## Ollama LAN note
-When connecting directly from browser to Ollama, CORS/network policy may block requests.
+## Voice
+- Microphone capture is explicit by user interaction.
+- If browser speech recognition is unavailable, audio remains local as a voice note unless user manually chooses bridge transcription.
 
-If blocked, place a minimal local proxy (same LAN) in front of Ollama and configure PocketBrain to call the proxy.
+## Backups
+- Plain backups are readable JSON.
+- Encrypted backups use PBKDF2 + AES-GCM in browser.
+- Losing passphrase means encrypted backup cannot be recovered.
+
+## CORS and LAN
+Browsers may block LAN access due to CORS/local-network permissions. You may need a local proxy/helper with explicit CORS policy.

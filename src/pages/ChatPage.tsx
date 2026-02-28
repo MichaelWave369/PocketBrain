@@ -1,20 +1,28 @@
 import { useEffect, useRef, useState } from 'react';
 import { StatusPill } from '../components/StatusPill';
+import { VoiceButton } from '../components/VoiceButton';
+import { useVoiceInput } from '../hooks/useVoiceInput';
 import { retrieveContext } from '../retrieval/retriever';
 import type { ProviderGenerateRequest } from '../providers/types';
 import type { ChatMessage, MemorySummary, ModelStatus } from '../types';
+import type { VoiceNote } from '../voice/types';
 import { createId } from '../utils/id';
 
 interface ChatPageProps {
   messages: ChatMessage[];
   summary: MemorySummary | null;
+  voiceNotes: VoiceNote[];
+  transcriptMemories: string[];
   modelStatus: ModelStatus;
   modelError: string | null;
   modelProgressText: string;
   modelProgressPct: number | null;
   activeProviderLabel: string;
+  bridgeEnabled: boolean;
   onGenerateWithProvider: (request: ProviderGenerateRequest, onChunk: (chunk: string) => void) => Promise<void>;
   onSend: (userMessage: ChatMessage, assistantMessage: ChatMessage) => Promise<void>;
+  onSaveVoiceNote: (note: VoiceNote) => Promise<void>;
+  onTranscribeWithBridge: (audioBlob: Blob) => Promise<string>;
   onStopGeneration: () => Promise<void>;
   onClear: () => Promise<void>;
   onResetModel: () => Promise<void>;
@@ -26,13 +34,18 @@ const SYSTEM_PROMPT =
 export const ChatPage = ({
   messages,
   summary,
+  voiceNotes,
+  transcriptMemories,
   modelStatus,
   modelError,
   modelProgressText,
   modelProgressPct,
   activeProviderLabel,
+  bridgeEnabled,
   onGenerateWithProvider,
   onSend,
+  onSaveVoiceNote,
+  onTranscribeWithBridge,
   onStopGeneration,
   onClear,
   onResetModel
@@ -41,15 +54,59 @@ export const ChatPage = ({
   const [streamingText, setStreamingText] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [pendingUserMessage, setPendingUserMessage] = useState<ChatMessage | null>(null);
+  const [voiceNotice, setVoiceNotice] = useState('');
+  const [bridgeTranscribingId, setBridgeTranscribingId] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
+
+  const voice = useVoiceInput();
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
-  }, [messages.length, streamingText]);
+  }, [messages.length, streamingText, voiceNotice]);
 
   const handleStop = async () => {
     await onStopGeneration();
     setIsStreaming(false);
+  };
+
+  const handleVoiceStop = async () => {
+    const result = await voice.stopRecording();
+    if (!result) {
+      return;
+    }
+
+    const id = createId();
+    const note: VoiceNote = {
+      id,
+      createdAt: Date.now(),
+      durationMs: result.durationMs,
+      mimeType: result.mimeType,
+      audioBlob: result.blob,
+      transcript: result.transcript
+    };
+
+    await onSaveVoiceNote(note);
+
+    if (result.transcript) {
+      setDraft((previous) => `${previous} ${result.transcript}`.trim());
+      setVoiceNotice('✅ Voice transcribed and inserted into draft.');
+      return;
+    }
+
+    setVoiceNotice('Voice capture saved, transcription unavailable on this browser.');
+  };
+
+  const transcribeWithBridge = async (note: VoiceNote) => {
+    setBridgeTranscribingId(note.id);
+    try {
+      const transcript = await onTranscribeWithBridge(note.audioBlob);
+      setDraft((previous) => `${previous} ${transcript}`.trim());
+      setVoiceNotice('✅ Bridge transcription inserted into draft.');
+    } catch (error) {
+      setVoiceNotice(error instanceof Error ? error.message : 'Bridge transcription failed.');
+    } finally {
+      setBridgeTranscribingId(null);
+    }
   };
 
   const handleSend = async () => {
@@ -67,7 +124,7 @@ export const ChatPage = ({
     try {
       const request: ProviderGenerateRequest = {
         systemPrompt: SYSTEM_PROMPT,
-        context: retrieveContext(messages, summary, content),
+        context: retrieveContext(messages, summary, content, transcriptMemories),
         userInput: content
       };
 
@@ -109,6 +166,14 @@ export const ChatPage = ({
           <span className="provider-badge">{activeProviderLabel}</span>
         </div>
         <div className="chat-actions">
+          <VoiceButton
+            state={voice.state}
+            elapsedLabel={voice.elapsedLabel}
+            onStart={voice.beginRecording}
+            onStop={handleVoiceStop}
+            onCancel={voice.cancelRecording}
+            onRetry={voice.retry}
+          />
           {isStreaming ? (
             <button className="ghost danger" onClick={() => void handleStop()}>
               Stop
@@ -133,6 +198,23 @@ export const ChatPage = ({
       ) : null}
 
       {modelError ? <p className="error-text">{modelError}</p> : null}
+      {voice.error ? <p className="error-text">{voice.error}</p> : null}
+      {voiceNotice ? <p className="helper-text">{voiceNotice}</p> : null}
+
+      {bridgeEnabled ? (
+        <div className="voice-note-strip">
+          {voiceNotes.filter((note) => !note.transcript).slice(0, 2).map((note) => (
+            <button
+              key={note.id}
+              className="ghost"
+              onClick={() => void transcribeWithBridge(note)}
+              disabled={bridgeTranscribingId === note.id}
+            >
+              {bridgeTranscribingId === note.id ? 'Transcribing…' : 'Transcribe using Bridge'}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
       <div className="message-list" ref={listRef}>
         {renderedMessages.length === 0 ? (

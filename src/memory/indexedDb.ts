@@ -1,10 +1,13 @@
 import type { AppSettings, ChatMessage, MemorySummary } from '../types';
+import type { VoiceNote } from '../voice/types';
 
 const DB_NAME = 'pocketbrain-db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const CHAT_STORE = 'chat_messages';
 const SUMMARY_STORE = 'memory_summary';
 const SETTINGS_STORE = 'settings';
+const VOICE_STORE = 'voice_notes';
+const BRIDGES_STORE = 'trusted_bridges';
 
 const openDb = async (): Promise<IDBDatabase> =>
   new Promise((resolve, reject) => {
@@ -20,6 +23,12 @@ const openDb = async (): Promise<IDBDatabase> =>
       }
       if (!db.objectStoreNames.contains(SETTINGS_STORE)) {
         db.createObjectStore(SETTINGS_STORE, { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains(VOICE_STORE)) {
+        db.createObjectStore(VOICE_STORE, { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains(BRIDGES_STORE)) {
+        db.createObjectStore(BRIDGES_STORE, { keyPath: 'id' });
       }
     };
 
@@ -65,6 +74,10 @@ export const getSummary = async (): Promise<MemorySummary | null> => {
   return summaries.sort((a, b) => b.updatedAt - a.updatedAt)[0] ?? null;
 };
 
+export const clearSummaries = async (): Promise<void> => {
+  await withStore(SUMMARY_STORE, 'readwrite', (store) => store.clear());
+};
+
 export const saveSettings = async (settings: AppSettings): Promise<void> => {
   await withStore(SETTINGS_STORE, 'readwrite', (store) => store.put({ ...settings, id: 'app-settings' }));
 };
@@ -95,14 +108,70 @@ export const getSettings = async (): Promise<AppSettings | null> => {
   };
 };
 
+export const clearBridgeSettings = async (): Promise<void> => {
+  await withStore(SETTINGS_STORE, 'readwrite', (store) => store.delete('app-settings'));
+  await withStore(BRIDGES_STORE, 'readwrite', (store) => store.clear());
+};
+
+export const saveVoiceNote = async (note: VoiceNote): Promise<void> => {
+  await withStore(VOICE_STORE, 'readwrite', (store) => store.put(note));
+};
+
+export const getVoiceNotes = async (): Promise<VoiceNote[]> => {
+  const notes = await withStore<VoiceNote[]>(VOICE_STORE, 'readonly', (store) => store.getAll());
+  return notes.sort((a, b) => b.createdAt - a.createdAt);
+};
+
+export const deleteVoiceNote = async (id: string): Promise<void> => {
+  await withStore(VOICE_STORE, 'readwrite', (store) => store.delete(id));
+};
+
+export const clearVoiceNotes = async (): Promise<void> => {
+  await withStore(VOICE_STORE, 'readwrite', (store) => store.clear());
+};
+
+export const saveTrustedBridgeEndpoint = async (endpoint: string): Promise<void> => {
+  await withStore(BRIDGES_STORE, 'readwrite', (store) => store.put({ id: endpoint, endpoint, updatedAt: Date.now() }));
+};
+
+export const getTrustedBridgeEndpoints = async (): Promise<string[]> => {
+  const entries = await withStore<Array<{ endpoint?: string; id?: string; updatedAt?: number }>>(
+    BRIDGES_STORE,
+    'readonly',
+    (store) => store.getAll()
+  );
+
+  return entries
+    .sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0))
+    .map((entry) => entry.endpoint ?? entry.id)
+    .filter((endpoint): endpoint is string => Boolean(endpoint));
+};
+
+export const replaceTrustedBridgeEndpoints = async (endpoints: string[]): Promise<void> => {
+  await withStore(BRIDGES_STORE, 'readwrite', (store) => store.clear());
+  await Promise.all(endpoints.map((endpoint) => saveTrustedBridgeEndpoint(endpoint)));
+};
+
 export const exportMemory = async (): Promise<string> => {
-  const [messages, summary, settings] = await Promise.all([getMessages(), getSummary(), getSettings()]);
-  return JSON.stringify({
-    exportedAt: new Date().toISOString(),
-    messages,
-    summary,
-    settings
-  }, null, 2);
+  const [messages, summary, settings, voiceNotes, trustedBridgeEndpoints] = await Promise.all([
+    getMessages(),
+    getSummary(),
+    getSettings(),
+    getVoiceNotes(),
+    getTrustedBridgeEndpoints()
+  ]);
+  return JSON.stringify(
+    {
+      exportedAt: new Date().toISOString(),
+      messages,
+      summary,
+      settings,
+      voiceNotes,
+      trustedBridgeEndpoints
+    },
+    null,
+    2
+  );
 };
 
 export const importMemory = async (raw: string): Promise<void> => {
@@ -110,9 +179,14 @@ export const importMemory = async (raw: string): Promise<void> => {
     messages?: ChatMessage[];
     summary?: MemorySummary;
     settings?: AppSettings;
+    voiceNotes?: VoiceNote[];
+    trustedBridgeEndpoints?: string[];
   };
 
   await clearMessages();
+  await clearSummaries();
+  await clearVoiceNotes();
+  await replaceTrustedBridgeEndpoints([]);
 
   if (parsed.messages?.length) {
     await Promise.all(parsed.messages.map((message) => saveMessage(message)));
@@ -125,4 +199,16 @@ export const importMemory = async (raw: string): Promise<void> => {
   if (parsed.settings) {
     await saveSettings(parsed.settings);
   }
+
+  if (parsed.voiceNotes?.length) {
+    await Promise.all(parsed.voiceNotes.map((note) => saveVoiceNote(note)));
+  }
+
+  if (parsed.trustedBridgeEndpoints?.length) {
+    await replaceTrustedBridgeEndpoints(parsed.trustedBridgeEndpoints);
+  }
+};
+
+export const clearAllLocalData = async (): Promise<void> => {
+  await Promise.all([clearMessages(), clearSummaries(), clearVoiceNotes(), clearBridgeSettings()]);
 };

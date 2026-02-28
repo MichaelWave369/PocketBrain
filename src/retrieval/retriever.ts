@@ -88,12 +88,25 @@ const truncateToBudget = (parts: string[]): string => {
 
 const formatMessage = (message: ChatMessage): string => `${message.role}: ${message.content}`;
 
-export const retrieveContext = (messages: ChatMessage[], summary: MemorySummary | null, userInput: string): string => {
+export const retrieveContext = (
+  messages: ChatMessage[],
+  summary: MemorySummary | null,
+  userInput: string,
+  transcriptMemories: string[] = []
+): string => {
   const queryTokens = tokenizeText(userInput);
-  const docs = messages.map((message) => tokenizeText(message.content));
+  const transcriptMessages: ChatMessage[] = transcriptMemories.map((text, index) => ({
+    id: `voice-${index}`,
+    role: "assistant",
+    content: text,
+    createdAt: 0
+  }));
+
+  const allMessages = [...messages, ...transcriptMessages];
+  const docs = allMessages.map((message) => tokenizeText(message.content));
   const scores = scoreBm25(queryTokens, docs);
 
-  const relevant = messages
+  const relevant = allMessages
     .map((message, index) => ({ message, score: scores[index] ?? 0 }))
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score)

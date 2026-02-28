@@ -28,6 +28,7 @@ export interface ChatProvider {
   interrupt: () => Promise<void>;
   getModelList?: () => Promise<string[]>;
   testConnection?: () => Promise<{ ok: boolean; message: string }>;
+  transcribeAudio?: (audioBlob: Blob, options?: { language?: string }) => Promise<string>;
 }
 
 export interface ProviderGenerateRequest {

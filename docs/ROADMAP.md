@@ -1,17 +1,17 @@
 # Roadmap
 
-## v0.3.0 (current)
-- Provider bridge architecture (local + remote endpoint options)
-- Ollama bridge + OpenAI-compatible bridge
-- Local-first memory preserved under bridge routing
-- Actions lockfile/caching fix path documented
+## v0.4.0 (current)
+- Voice capture UX and local voice note persistence
+- Pairing-first LAN bridge discovery
+- Encrypted backup/export/import
+- Local-first memory remains default
 
-## v0.4.x ideas
-- Full streaming parsers for bridge providers (SSE/chunked)
-- Optional encrypted bridge credential storage
-- Bridge health auto-fallback policies
+## v0.5.x
+- Full streaming bridge provider support (SSE/chunk parser)
+- Optional bridge speech-to-text endpoint integration
+- Better bridge trust management and endpoint signatures
 
 ## Future
-- Native mobile wrapper integration
-- Multi-agent memory tools
-- Optional self-hosted sync with end-to-end encryption
+- Native wrapper enhancements
+- End-to-end encrypted sync options
+- Desktop companion helper implementation

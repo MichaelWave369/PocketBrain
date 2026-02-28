@@ -1,17 +1,26 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppLayout } from './layouts/AppLayout';
+import { fromVoiceNoteData, toVoiceNoteData, type BackupData, type ImportMode } from './backup/types';
 import { getCuratedModelList, getDeviceDiagnostics, resetModelEngine, type ProgressReport } from './model/webllmService';
 import {
+  clearAllLocalData,
+  clearBridgeSettings,
   clearMessages,
-  exportMemory,
+  clearSummaries,
+  clearVoiceNotes,
+  deleteVoiceNote,
   getMessages,
   getSettings,
   getSummary,
-  importMemory,
+  getTrustedBridgeEndpoints,
+  getVoiceNotes,
+  replaceTrustedBridgeEndpoints,
   saveMessage,
   saveSettings,
-  saveSummary
+  saveSummary,
+  saveTrustedBridgeEndpoint,
+  saveVoiceNote
 } from './memory/indexedDb';
 import { updateRollingSummary } from './memory/summary';
 import { ChatPage } from './pages/ChatPage';
@@ -20,6 +29,7 @@ import { SettingsPage } from './pages/SettingsPage';
 import { getProvider, getProviderLabel, getProviderOptions } from './providers/providerRegistry';
 import type { ProviderGenerateRequest } from './providers/types';
 import type { AppSettings, ChatMessage, DeviceDiagnostics, MemorySummary, ModelStatus } from './types';
+import type { VoiceNote } from './voice/types';
 
 const DEFAULT_SETTINGS: AppSettings = {
   localOnlyMode: true,
@@ -42,8 +52,10 @@ const DEFAULT_DIAGNOSTICS: DeviceDiagnostics = {
 
 export const App = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [voiceNotes, setVoiceNotes] = useState<VoiceNote[]>([]);
   const [summary, setSummary] = useState<MemorySummary | null>(null);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  const [trustedBridgeEndpoints, setTrustedBridgeEndpoints] = useState<string[]>([]);
   const [modelStatus, setModelStatus] = useState<ModelStatus>('idle');
   const [modelError, setModelError] = useState<string | null>(null);
   const [modelProgressText, setModelProgressText] = useState('Waiting to load provider...');
@@ -53,19 +65,26 @@ export const App = () => {
   const [activeProviderLabel, setActiveProviderLabel] = useState('Local');
   const [modelReloadCounter, setModelReloadCounter] = useState(0);
 
+  const refreshLocalData = async () => {
+    const [storedMessages, storedSummary, storedSettings, storedVoiceNotes, bridges] = await Promise.all([
+      getMessages(),
+      getSummary(),
+      getSettings(),
+      getVoiceNotes(),
+      getTrustedBridgeEndpoints()
+    ]);
+
+    setMessages(storedMessages);
+    setSummary(storedSummary);
+    setSettings(storedSettings ?? DEFAULT_SETTINGS);
+    setVoiceNotes(storedVoiceNotes);
+    setTrustedBridgeEndpoints(bridges);
+  };
+
   useEffect(() => {
     const bootstrap = async () => {
-      const [storedMessages, storedSummary, storedSettings, availableModels, deviceStats] = await Promise.all([
-        getMessages(),
-        getSummary(),
-        getSettings(),
-        getCuratedModelList(),
-        getDeviceDiagnostics()
-      ]);
-
-      setMessages(storedMessages);
-      setSummary(storedSummary);
-      setSettings(storedSettings ?? DEFAULT_SETTINGS);
+      const [availableModels, deviceStats] = await Promise.all([getCuratedModelList(), getDeviceDiagnostics()]);
+      await refreshLocalData();
       setModelOptions(availableModels.length ? availableModels : [DEFAULT_SETTINGS.selectedModel]);
       setDiagnostics((prev) => ({ ...prev, ...deviceStats }));
     };
@@ -122,11 +141,6 @@ export const App = () => {
                 fallbackToLocalOnFailure: false,
                 useWebWorker: settings.useWebWorker,
                 useIndexedDbCache: settings.useIndexedDbCache
-              },
-              onProgress: (report) => {
-                if (report.text) {
-                  setModelProgressText(`Bridge failed; local fallback: ${report.text}`);
-                }
               }
             });
             setActiveProviderLabel('Local (Fallback)');
@@ -134,7 +148,7 @@ export const App = () => {
             setModelError('Bridge unavailable. Using local WebLLM fallback.');
             return;
           } catch {
-            // fallthrough to error state
+            // noop
           }
         }
 
@@ -151,6 +165,8 @@ export const App = () => {
     settings.bridgeModelName,
     settings.bridgeApiKey,
     settings.bridgeFallbackToLocal,
+    settings.useWebWorker,
+    settings.useIndexedDbCache,
     modelReloadCounter
   ]);
 
@@ -161,6 +177,16 @@ export const App = () => {
     const nextSummary = updateRollingSummary(summary, userMessage, assistantMessage);
     setSummary(nextSummary);
     await saveSummary(nextSummary);
+  };
+
+  const onSaveVoiceNote = async (note: VoiceNote) => {
+    await saveVoiceNote(note);
+    setVoiceNotes((prev) => [note, ...prev]);
+  };
+
+  const onDeleteVoiceNote = async (id: string) => {
+    await deleteVoiceNote(id);
+    setVoiceNotes((prev) => prev.filter((note) => note.id !== id));
   };
 
   const onClear = async () => {
@@ -177,30 +203,9 @@ export const App = () => {
           bridgeModelName: '',
           bridgeApiKey: ''
         };
+
     setSettings(sanitized);
     await saveSettings(sanitized);
-  };
-
-  const onExport = async () => {
-    const raw = await exportMemory();
-    const blob = new Blob([raw], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'pocketbrain-memory.json';
-    link.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const onImport = async (file: File) => {
-    const raw = await file.text();
-    await importMemory(raw);
-    const [nextMessages, nextSummary, nextSettings] = await Promise.all([getMessages(), getSummary(), getSettings()]);
-    setMessages(nextMessages);
-    setSummary(nextSummary);
-    if (nextSettings) {
-      setSettings(nextSettings);
-    }
   };
 
   const onResetModel = async () => {
@@ -241,10 +246,88 @@ export const App = () => {
   const onTestBridgeConnection = async (): Promise<{ ok: boolean; message: string }> => {
     const provider = getProvider(settings.providerType);
     if (!provider.testConnection) {
-      return { ok: true, message: 'Local mode is always local-first and available after model load.' };
+      return { ok: true, message: 'Local mode is available after model load.' };
     }
-    return provider.testConnection();
+
+    const result = await provider.testConnection();
+    if (result.ok && settings.bridgeEndpointUrl) {
+      await saveTrustedBridgeEndpoint(settings.bridgeEndpointUrl);
+      setTrustedBridgeEndpoints(await getTrustedBridgeEndpoints());
+    }
+
+    return result;
   };
+
+  const onApplyPairing = async (patch: Partial<AppSettings>) => {
+    const merged = { ...settings, ...patch };
+    setSettings(merged);
+    await saveSettings(merged);
+  };
+
+  const onExportData = async (): Promise<BackupData> => ({
+    version: 1,
+    createdAt: new Date().toISOString(),
+    appVersion: '0.4.0',
+    messages,
+    summary,
+    settings,
+    trustedBridgeEndpoints,
+    voiceNotes: await Promise.all(voiceNotes.map((note) => toVoiceNoteData(note)))
+  });
+
+  const onImportData = async (data: BackupData, mode: ImportMode) => {
+    if (mode === 'replace') {
+      await clearAllLocalData();
+    }
+
+    await Promise.all(data.messages.map((message) => saveMessage(message)));
+    if (data.summary) {
+      await saveSummary(data.summary);
+    }
+    if (data.settings) {
+      await saveSettings(data.settings);
+    }
+    await Promise.all(data.voiceNotes.map((entry) => saveVoiceNote(fromVoiceNoteData(entry))));
+
+    if (mode === 'replace') {
+      await replaceTrustedBridgeEndpoints(data.trustedBridgeEndpoints);
+    } else {
+      const merged = [...new Set([...trustedBridgeEndpoints, ...data.trustedBridgeEndpoints])];
+      await replaceTrustedBridgeEndpoints(merged);
+    }
+
+    await refreshLocalData();
+  };
+
+  const onClearData = async (scope: 'chats' | 'summaries' | 'voice' | 'bridges' | 'all') => {
+    if (scope === 'chats') {
+      await clearMessages();
+    }
+    if (scope === 'summaries') {
+      await clearSummaries();
+    }
+    if (scope === 'voice') {
+      await clearVoiceNotes();
+    }
+    if (scope === 'bridges') {
+      await clearBridgeSettings();
+    }
+    if (scope === 'all') {
+      await clearAllLocalData();
+    }
+
+    await refreshLocalData();
+  };
+
+  const onTranscribeWithBridge = async (audioBlob: Blob): Promise<string> => {
+    const provider = getProvider(settings.providerType);
+    if (!provider.transcribeAudio) {
+      throw new Error('Selected provider does not support bridge transcription yet.');
+    }
+    return provider.transcribeAudio(audioBlob, { language: navigator.language });
+  };
+
+  const transcriptMemories = voiceNotes.map((note) => note.transcript).filter((text): text is string => Boolean(text));
 
   return (
     <Routes>
@@ -255,20 +338,25 @@ export const App = () => {
             <ChatPage
               messages={messages}
               summary={summary}
+              voiceNotes={voiceNotes}
+              transcriptMemories={transcriptMemories}
               modelStatus={modelStatus}
               modelError={modelError}
               modelProgressText={modelProgressText}
               modelProgressPct={modelProgressPct}
               activeProviderLabel={activeProviderLabel}
+              bridgeEnabled={settings.providerType !== 'local-webllm'}
               onGenerateWithProvider={onGenerateWithProvider}
               onSend={onSend}
+              onSaveVoiceNote={onSaveVoiceNote}
+              onTranscribeWithBridge={onTranscribeWithBridge}
               onStopGeneration={onStopGeneration}
               onClear={onClear}
               onResetModel={onResetModel}
             />
           }
         />
-        <Route path="/memory" element={<MemoryPage messages={messages} summary={summary} />} />
+        <Route path="/memory" element={<MemoryPage messages={messages} summary={summary} voiceNotes={voiceNotes} onDeleteVoiceNote={onDeleteVoiceNote} />} />
         <Route
           path="/settings"
           element={
@@ -277,11 +365,14 @@ export const App = () => {
               modelOptions={modelOptions}
               providerOptions={getProviderOptions().map((item) => ({ value: item.value, label: item.label }))}
               diagnostics={diagnostics}
+              trustedBridgeEndpoints={trustedBridgeEndpoints}
               onSettingsChange={onSettingsChange}
-              onExport={onExport}
-              onImport={onImport}
               onResetModel={onResetModel}
               onTestBridgeConnection={onTestBridgeConnection}
+              onApplyPairing={onApplyPairing}
+              onExportData={onExportData}
+              onImportData={onImportData}
+              onClearData={onClearData}
             />
           }
         />
