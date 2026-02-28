@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppLayout } from './layouts/AppLayout';
 import { fromImageMemoryData, fromVoiceNoteData, toImageMemoryData, toVoiceNoteData, type BackupData, type ImportMode } from './backup/types';
@@ -30,6 +30,7 @@ import {
   saveVoiceNote
 } from './memory/indexedDb';
 import { updateRollingSummary } from './memory/summary';
+import { CapturePage } from './pages/CapturePage';
 import { ChatPage } from './pages/ChatPage';
 import { MemoryPage } from './pages/MemoryPage';
 import { SettingsPage } from './pages/SettingsPage';
@@ -195,7 +196,7 @@ export const App = () => {
   const onDescribeImageWithBridge = async (imageBlob: Blob): Promise<string> => {
     const provider = getProvider(settings.providerType);
     if (!provider.describeImage) throw new Error('Bridge image analysis unavailable for this provider.');
-    return provider.describeImage(imageBlob, 'Summarize this image for memory indexing.');
+    return provider.describeImage(imageBlob, { prompt: 'Summarize this image for memory indexing.' });
   };
 
   const onSaveVoiceNote = async (note: VoiceNote) => {
@@ -382,6 +383,10 @@ export const App = () => {
               onResetModel={onResetModel}
             />
           }
+        />
+        <Route
+          path="/capture"
+          element={<CapturePage images={imageMemories} onSaveImage={onSaveImage} onUpdateImage={onUpdateImage} onDeleteImage={onDeleteImage} onAttachImageToChat={onAttachImageToChat} />}
         />
         <Route
           path="/memory"
