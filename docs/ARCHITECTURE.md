@@ -1,34 +1,31 @@
 # Architecture
 
-PocketBrain uses a modular structure to keep model logic, memory, retrieval, and UI separate.
+PocketBrain keeps model logic, memory, retrieval, and UI isolated so each area can evolve independently.
 
 ## Modules
 
+- `src/model/worker.ts`
+  - WebLLM worker entry via `WebWorkerMLCEngineHandler`
 - `src/model/webllmService.ts`
-  - Initializes WebLLM engine
-  - Sends completion requests
+  - Bootstrap via worker (`CreateWebWorkerMLCEngine`) with main-thread fallback
+  - Streaming and non-stream generation helpers
+  - Model stop/reset and lightweight diagnostics
 - `src/memory/indexedDb.ts`
-  - IndexedDB CRUD for messages, summary, and settings
+  - IndexedDB CRUD for messages, summary, settings
   - Export/import helpers
 - `src/memory/summary.ts`
-  - Rolling summary update logic
+  - Rolling summary updates
 - `src/retrieval/retriever.ts`
-  - Context builder: pinned summary + recent turns
+  - Tokenizer + BM25-style lexical scoring + recency blending + context budgeting
 - `src/pages/*`
-  - Chat, Memory, Settings presentation and interaction
+  - Chat, Memory, Settings UI interactions
 
 ## Data flow
 
-1. App starts and loads persisted messages/summary/settings from IndexedDB.
-2. App initializes WebLLM with selected model.
-3. User sends a message.
-4. Retrieval composes context from summary + recent messages.
-5. Model generates assistant reply.
-6. User + assistant turns are saved to IndexedDB.
-7. Rolling summary is updated and persisted.
-
-## Storage schema
-
-- `chat_messages` store: each chat turn
-- `memory_summary` store: one pinned rolling summary
-- `settings` store: app settings record
+1. App loads messages/summary/settings from IndexedDB.
+2. App loads curated model list + device diagnostics.
+3. App boots model (worker preferred), reporting progress text/percent.
+4. On send, retriever builds compact context with strict budget.
+5. Model streams assistant tokens into chat UI.
+6. Final user/assistant turns persist to IndexedDB.
+7. Rolling summary updates and persists.

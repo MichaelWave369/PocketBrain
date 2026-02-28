@@ -17,10 +17,18 @@ export interface MemorySummary {
 export interface AppSettings {
   localOnlyMode: boolean;
   selectedModel: string;
+  useWebWorker: boolean;
+  useIndexedDbCache: boolean;
 }
 
 export type ModelStatus = 'idle' | 'loading' | 'ready' | 'generating' | 'error';
 
 export interface ModelResult {
   text: string;
+}
+
+export interface DeviceDiagnostics {
+  userAgent: string;
+  gpuVendor: string;
+  maxStorageBufferBindingSize: string;
 }

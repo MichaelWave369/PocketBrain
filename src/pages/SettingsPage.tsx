@@ -1,14 +1,25 @@
 import type { ChangeEvent } from 'react';
-import type { AppSettings } from '../types';
+import type { AppSettings, DeviceDiagnostics } from '../types';
 
 interface SettingsPageProps {
   settings: AppSettings;
+  modelOptions: string[];
+  diagnostics: DeviceDiagnostics;
   onSettingsChange: (next: AppSettings) => void;
   onExport: () => Promise<void>;
   onImport: (file: File) => Promise<void>;
+  onResetModel: () => Promise<void>;
 }
 
-export const SettingsPage = ({ settings, onSettingsChange, onExport, onImport }: SettingsPageProps) => {
+export const SettingsPage = ({
+  settings,
+  modelOptions,
+  diagnostics,
+  onSettingsChange,
+  onExport,
+  onImport,
+  onResetModel
+}: SettingsPageProps) => {
   const handleImportChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) {
@@ -36,15 +47,56 @@ export const SettingsPage = ({ settings, onSettingsChange, onExport, onImport }:
 
       <article className="card">
         <label className="settings-field">
-          <span>Model selection (placeholder)</span>
+          <span>Phone-safe model selection</span>
           <select
             value={settings.selectedModel}
             onChange={(event) => onSettingsChange({ ...settings, selectedModel: event.target.value })}
           >
-            <option value="Llama-3.2-1B-Instruct-q4f16_1-MLC">Llama 3.2 1B Instruct (default)</option>
-            <option value="Qwen2.5-1.5B-Instruct-q4f16_1-MLC">Qwen 2.5 1.5B (placeholder)</option>
+            {modelOptions.map((modelId) => (
+              <option key={modelId} value={modelId}>
+                {modelId}
+              </option>
+            ))}
           </select>
         </label>
+      </article>
+
+      <article className="card">
+        <label className="settings-row">
+          <span>Use Web Worker (recommended)</span>
+          <input
+            type="checkbox"
+            checked={settings.useWebWorker}
+            onChange={(event) => onSettingsChange({ ...settings, useWebWorker: event.target.checked })}
+          />
+        </label>
+
+        <label className="settings-row">
+          <span>Use IndexedDB cache for model artifacts</span>
+          <input
+            type="checkbox"
+            checked={settings.useIndexedDbCache}
+            onChange={(event) => onSettingsChange({ ...settings, useIndexedDbCache: event.target.checked })}
+          />
+        </label>
+      </article>
+
+      <article className="card">
+        <h3>Device diagnostics</h3>
+        <ul className="diagnostics-list">
+          <li>
+            <strong>GPU vendor</strong>
+            <span>{diagnostics.gpuVendor}</span>
+          </li>
+          <li>
+            <strong>Max storage buffer binding size</strong>
+            <span>{diagnostics.maxStorageBufferBindingSize}</span>
+          </li>
+          <li>
+            <strong>User agent</strong>
+            <span>{diagnostics.userAgent}</span>
+          </li>
+        </ul>
       </article>
 
       <article className="card settings-actions">
@@ -55,6 +107,9 @@ export const SettingsPage = ({ settings, onSettingsChange, onExport, onImport }:
           Import memory
           <input type="file" accept="application/json" onChange={(event) => void handleImportChange(event)} />
         </label>
+        <button className="ghost" onClick={() => void onResetModel()}>
+          Reset model runtime
+        </button>
       </article>
     </section>
   );

@@ -50,7 +50,7 @@ body {
 
 .chat-panel {
   display: grid;
-  grid-template-rows: auto auto 1fr auto;
+  grid-template-rows: auto auto auto 1fr auto;
   gap: 0.75rem;
   min-height: calc(100dvh - 185px);
 }
@@ -59,6 +59,14 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.5rem;
+}
+
+.chat-actions {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .status-pill {
@@ -66,6 +74,7 @@ body {
   padding: 0.35rem 0.65rem;
   font-size: 0.8rem;
   border: 1px solid transparent;
+  white-space: nowrap;
 }
 
 .status-loading,
@@ -82,6 +91,26 @@ body {
 .status-error {
   background: #7f1d1d;
   border-color: #ef4444;
+}
+
+.progress-wrap {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: #1e293b;
+  overflow: hidden;
+}
+
+.progress-bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #2563eb, #4f46e5);
+  transition: width 160ms ease;
 }
 
 .message-list {
@@ -116,7 +145,8 @@ body {
 
 textarea,
 select,
-button {
+button,
+input {
   border-radius: 10px;
   border: 1px solid #334155;
   background: #0f172a;
@@ -124,9 +154,14 @@ button {
   font: inherit;
 }
 
-textarea {
+textarea,
+input,
+select {
   width: 100%;
   padding: 0.6rem;
+}
+
+textarea {
   resize: vertical;
 }
 
@@ -142,6 +177,11 @@ button:disabled {
 
 .ghost {
   background: transparent;
+}
+
+.danger {
+  border-color: #ef4444;
+  color: #fecaca;
 }
 
 .helper-text {
@@ -192,24 +232,34 @@ button:disabled {
   gap: 0.6rem;
 }
 
+.memory-list.compact li span {
+  color: #cbd5e1;
+}
+
 .memory-list li {
   display: grid;
   gap: 0.15rem;
+}
+
+.search-input {
+  margin-bottom: 0.7rem;
 }
 
 .settings-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.settings-row:last-child {
+  margin-bottom: 0;
 }
 
 .settings-field {
   display: grid;
   gap: 0.4rem;
-}
-
-.settings-field select {
-  padding: 0.5rem;
 }
 
 .settings-actions {
@@ -226,6 +276,19 @@ button:disabled {
 
 .import-button input {
   display: none;
+}
+
+.diagnostics-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.diagnostics-list li {
+  display: grid;
+  gap: 0.15rem;
 }
 
 @media (min-width: 768px) {

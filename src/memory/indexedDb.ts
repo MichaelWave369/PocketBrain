@@ -80,8 +80,13 @@ export const getSettings = async (): Promise<AppSettings | null> => {
     return null;
   }
 
-  const { localOnlyMode, selectedModel } = item;
-  return { localOnlyMode, selectedModel };
+  const { localOnlyMode, selectedModel, useWebWorker, useIndexedDbCache } = item as AppSettings & { id: string };
+  return {
+    localOnlyMode: localOnlyMode ?? true,
+    selectedModel: selectedModel ?? 'Llama-3.2-1B-Instruct-q4f16_1-MLC',
+    useWebWorker: useWebWorker ?? true,
+    useIndexedDbCache: useIndexedDbCache ?? false
+  };
 };
 
 export const exportMemory = async (): Promise<string> => {
