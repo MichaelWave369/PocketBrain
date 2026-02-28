@@ -9,7 +9,7 @@ interface MemoryPageProps {
   voiceNotes: VoiceNote[];
   imageMemories?: string[];
   onDeleteVoiceNote: (id: string) => Promise<void>;
-  onDeleteImageMemory: (id: string) => Promise<void>;
+  onDeleteImageMemory?: (id: string) => Promise<void>;
 }
 
 const PINNED_KEY = 'pocketbrain-pinned-memory-ids';
@@ -189,26 +189,24 @@ export const MemoryPage = ({ messages, summary, voiceNotes, imageMemories = [], 
         ) : null}
       </article>
 
-      {(filter === 'all' || filter === 'voice') ? (
-        <article className="card">
-          <h3>Voice Notes ({voiceNotes.length})</h3>
-          <ul className="memory-list compact">
-            {voiceNotes.length ? (voiceNotes.map((note) => (
-              <li key={note.id}>
-                <strong>{new Date(note.createdAt).toLocaleString()}</strong>
-                <audio controls src={URL.createObjectURL(note.audioBlob)} />
-                <span>{note.transcript ? `Transcript: ${snippet(note.transcript)}` : 'No transcript available.'}</span>
-                <button className="ghost danger" onClick={() => void onDeleteVoiceNote(note.id)}>Delete</button>
-              </li>
-            ))
-          ) : (
-            <li>
-              <span className="helper-text">No voice notes stored yet.</span>
+      <article className="card">
+        <h3>Voice Notes ({voiceNotes.length})</h3>
+        <ul className="memory-list compact">
+          {voiceNotes.length ? (voiceNotes.map((note) => (
+            <li key={note.id}>
+              <strong>{new Date(note.createdAt).toLocaleString()}</strong>
+              <audio controls src={URL.createObjectURL(note.audioBlob)} />
+              <span>{note.transcript ? `Transcript: ${snippet(note.transcript)}` : 'No transcript available.'}</span>
+              <button className="ghost danger" onClick={() => void onDeleteVoiceNote(note.id)}>Delete</button>
             </li>
-          )}
+          ))
+        ) : (
+          <li>
+            <span className="helper-text">No voice notes stored yet.</span>
+          </li>
+        )}
         </ul>
       </article>
-      ) : null}
     </section>
   );
 };
