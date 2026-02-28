@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { StatusPill } from '../components/StatusPill';
-import { generateReplyStream, stopGeneration } from '../model/webllmService';
 import { retrieveContext } from '../retrieval/retriever';
+import type { ProviderGenerateRequest } from '../providers/types';
 import type { ChatMessage, MemorySummary, ModelStatus } from '../types';
 import { createId } from '../utils/id';
 
@@ -12,15 +12,16 @@ interface ChatPageProps {
   modelError: string | null;
   modelProgressText: string;
   modelProgressPct: number | null;
+  activeProviderLabel: string;
+  onGenerateWithProvider: (request: ProviderGenerateRequest, onChunk: (chunk: string) => void) => Promise<void>;
   onSend: (userMessage: ChatMessage, assistantMessage: ChatMessage) => Promise<void>;
+  onStopGeneration: () => Promise<void>;
   onClear: () => Promise<void>;
   onResetModel: () => Promise<void>;
-  modelEngineReady: boolean;
-  modelEngine: import('../model/webllmService').WebLlmEngine | null;
-  setModelStatus: (status: ModelStatus) => void;
 }
 
-const SYSTEM_PROMPT = 'You are PocketBrain, a concise assistant running locally in a private environment.';
+const SYSTEM_PROMPT =
+  'You are PocketBrain, a concise assistant. Keep memory and retrieval local-first, and use bridge providers only when configured by the user.';
 
 export const ChatPage = ({
   messages,
@@ -29,12 +30,12 @@ export const ChatPage = ({
   modelError,
   modelProgressText,
   modelProgressPct,
+  activeProviderLabel,
+  onGenerateWithProvider,
   onSend,
+  onStopGeneration,
   onClear,
-  onResetModel,
-  modelEngineReady,
-  modelEngine,
-  setModelStatus
+  onResetModel
 }: ChatPageProps) => {
   const [draft, setDraft] = useState('');
   const [streamingText, setStreamingText] = useState('');
@@ -47,18 +48,13 @@ export const ChatPage = ({
   }, [messages.length, streamingText]);
 
   const handleStop = async () => {
-    if (!modelEngine) {
-      return;
-    }
-
-    await stopGeneration(modelEngine);
+    await onStopGeneration();
     setIsStreaming(false);
-    setModelStatus('ready');
   };
 
   const handleSend = async () => {
     const content = draft.trim();
-    if (!content || !modelEngine || !modelEngineReady || isStreaming) {
+    if (!content || isStreaming || modelStatus === 'loading') {
       return;
     }
 
@@ -67,16 +63,19 @@ export const ChatPage = ({
     setDraft('');
     setStreamingText('');
     setIsStreaming(true);
-    setModelStatus('generating');
 
     try {
-      const context = retrieveContext(messages, summary, content);
+      const request: ProviderGenerateRequest = {
+        systemPrompt: SYSTEM_PROMPT,
+        context: retrieveContext(messages, summary, content),
+        userInput: content
+      };
 
       let generated = '';
-      for await (const chunk of generateReplyStream(modelEngine, SYSTEM_PROMPT, context, content)) {
+      await onGenerateWithProvider(request, (chunk) => {
         generated += chunk;
         setStreamingText(generated);
-      }
+      });
 
       const assistantContent = generated.trim() || 'I could not generate a response.';
       const assistantMessage: ChatMessage = {
@@ -89,11 +88,10 @@ export const ChatPage = ({
       await onSend(userMessage, assistantMessage);
     } catch (error) {
       console.error(error);
-      setStreamingText('Generation stopped or failed. Try resetting the model.');
+      setStreamingText('Generation stopped or failed. Try provider connection test or reset model.');
     } finally {
       setPendingUserMessage(null);
       setIsStreaming(false);
-      setModelStatus('ready');
       setTimeout(() => setStreamingText(''), 500);
     }
   };
@@ -106,7 +104,10 @@ export const ChatPage = ({
   return (
     <section className="panel chat-panel">
       <div className="chat-toolbar">
-        <StatusPill status={isStreaming ? 'generating' : modelStatus} />
+        <div className="provider-badge-wrap">
+          <StatusPill status={isStreaming ? 'generating' : modelStatus} />
+          <span className="provider-badge">{activeProviderLabel}</span>
+        </div>
         <div className="chat-actions">
           {isStreaming ? (
             <button className="ghost danger" onClick={() => void handleStop()}>
@@ -117,7 +118,7 @@ export const ChatPage = ({
             Clear chat
           </button>
           <button className="ghost" onClick={() => void onResetModel()}>
-            Reset model
+            Reset runtime
           </button>
         </div>
       </div>
@@ -134,7 +135,9 @@ export const ChatPage = ({
       {modelError ? <p className="error-text">{modelError}</p> : null}
 
       <div className="message-list" ref={listRef}>
-        {renderedMessages.length === 0 ? <p className="helper-text">Start the first conversation turn.</p> : null}
+        {renderedMessages.length === 0 ? (
+          <p className="helper-text">Small phone, big brain: your memory stays local, provider can be local or bridge.</p>
+        ) : null}
         {renderedMessages.map((message) => (
           <article key={message.id} className={`message message-${message.role}`}>
             <strong>{message.role === 'user' ? 'You' : 'PocketBrain'}</strong>
@@ -157,7 +160,7 @@ export const ChatPage = ({
           onChange={(event) => setDraft(event.target.value)}
           rows={2}
         />
-        <button onClick={() => void handleSend()} disabled={!modelEngineReady || isStreaming || !draft.trim()}>
+        <button onClick={() => void handleSend()} disabled={isStreaming || !draft.trim() || modelStatus === 'loading'}>
           Send
         </button>
       </div>

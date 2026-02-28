@@ -80,12 +80,18 @@ export const getSettings = async (): Promise<AppSettings | null> => {
     return null;
   }
 
-  const { localOnlyMode, selectedModel, useWebWorker, useIndexedDbCache } = item as AppSettings & { id: string };
+  const settings = item as AppSettings & { id: string };
   return {
-    localOnlyMode: localOnlyMode ?? true,
-    selectedModel: selectedModel ?? 'Llama-3.2-1B-Instruct-q4f16_1-MLC',
-    useWebWorker: useWebWorker ?? true,
-    useIndexedDbCache: useIndexedDbCache ?? false
+    localOnlyMode: settings.localOnlyMode ?? true,
+    selectedModel: settings.selectedModel ?? 'Llama-3.2-1B-Instruct-q4f16_1-MLC',
+    useWebWorker: settings.useWebWorker ?? true,
+    useIndexedDbCache: settings.useIndexedDbCache ?? false,
+    providerType: settings.providerType ?? 'local-webllm',
+    bridgeEndpointUrl: settings.bridgeEndpointUrl ?? '',
+    bridgeModelName: settings.bridgeModelName ?? '',
+    bridgeApiKey: settings.bridgeApiKey ?? '',
+    rememberBridgeSettings: settings.rememberBridgeSettings ?? true,
+    bridgeFallbackToLocal: settings.bridgeFallbackToLocal ?? true
   };
 };
 

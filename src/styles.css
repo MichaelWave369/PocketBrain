@@ -69,6 +69,20 @@ body {
   justify-content: flex-end;
 }
 
+.provider-badge-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.provider-badge {
+  font-size: 0.75rem;
+  padding: 0.22rem 0.5rem;
+  border: 1px solid #334155;
+  border-radius: 999px;
+  color: #cbd5e1;
+}
+
 .status-pill {
   border-radius: 999px;
   padding: 0.35rem 0.65rem;
@@ -253,6 +267,15 @@ button:disabled {
   margin-bottom: 0.75rem;
 }
 
+.settings-row select {
+  width: 55%;
+  max-width: 320px;
+}
+
+.settings-row input[type="checkbox"] {
+  width: auto;
+}
+
 .settings-row:last-child {
   margin-bottom: 0;
 }
@@ -295,4 +318,9 @@ button:disabled {
   .panel {
     padding: 1rem;
   }
+}
+
+.privacy-callout p {
+  margin: 0.4rem 0 0;
+  color: #cbd5e1;
 }

@@ -1,31 +1,32 @@
 # Architecture
 
-PocketBrain keeps model logic, memory, retrieval, and UI isolated so each area can evolve independently.
+PocketBrain is local-first by design: memory and retrieval live on-device regardless of inference provider.
 
-## Modules
+## Runtime layers
 
-- `src/model/worker.ts`
-  - WebLLM worker entry via `WebWorkerMLCEngineHandler`
-- `src/model/webllmService.ts`
-  - Bootstrap via worker (`CreateWebWorkerMLCEngine`) with main-thread fallback
-  - Streaming and non-stream generation helpers
-  - Model stop/reset and lightweight diagnostics
-- `src/memory/indexedDb.ts`
-  - IndexedDB CRUD for messages, summary, settings
-  - Export/import helpers
-- `src/memory/summary.ts`
-  - Rolling summary updates
+- `src/providers/*`
+  - Provider abstraction with normalized generate/generateStream/interrupt flow
+  - Implementations:
+    - Local WebLLM provider
+    - Ollama bridge provider
+    - OpenAI-compatible bridge provider
+- `src/model/*`
+  - WebLLM worker + service helpers used by local provider
 - `src/retrieval/retriever.ts`
-  - Tokenizer + BM25-style lexical scoring + recency blending + context budgeting
+  - BM25-style lexical ranking, recency blending, strict context budget
+- `src/memory/*`
+  - IndexedDB persistence for messages, rolling summary, and settings
 - `src/pages/*`
-  - Chat, Memory, Settings UI interactions
+  - Chat, Memory, Settings UI
 
-## Data flow
+## Request flow
+1. User sends message.
+2. Retrieval composes context from pinned summary + relevant memory + recent turns.
+3. Provider registry routes request to configured provider.
+4. Provider streams/generates assistant output.
+5. Final messages persist to IndexedDB and summary updates.
 
-1. App loads messages/summary/settings from IndexedDB.
-2. App loads curated model list + device diagnostics.
-3. App boots model (worker preferred), reporting progress text/percent.
-4. On send, retriever builds compact context with strict budget.
-5. Model streams assistant tokens into chat UI.
-6. Final user/assistant turns persist to IndexedDB.
-7. Rolling summary updates and persists.
+## Privacy boundary
+- Local mode: no remote endpoint calls.
+- Bridge mode: only compiled prompt is sent to configured endpoint.
+- Memory database remains local to the browser.

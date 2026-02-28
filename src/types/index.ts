@@ -1,3 +1,5 @@
+import type { ProviderType } from '../providers/types';
+
 export type Role = 'user' | 'assistant' | 'system';
 
 export interface ChatMessage {
@@ -19,6 +21,12 @@ export interface AppSettings {
   selectedModel: string;
   useWebWorker: boolean;
   useIndexedDbCache: boolean;
+  providerType: ProviderType;
+  bridgeEndpointUrl: string;
+  bridgeModelName: string;
+  bridgeApiKey: string;
+  rememberBridgeSettings: boolean;
+  bridgeFallbackToLocal: boolean;
 }
 
 export type ModelStatus = 'idle' | 'loading' | 'ready' | 'generating' | 'error';

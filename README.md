@@ -1,64 +1,72 @@
-# PocketBrain v0.2.0
+# PocketBrain v0.3.0
 
-PocketBrain is a phone-first Progressive Web App (PWA) starter template for running a small local language model in the browser with private, local memory.
+PocketBrain is a phone-first Progressive Web App (PWA) starter for private memory-first chat.
 
-## What’s new in v0.2.0
+## Core idea: Small phone, big brain
 
-- Streaming chat output (assistant tokens appear live)
-- WebLLM worker runtime for smoother mobile UI responsiveness
-- Model loading progress text + progress bar
-- Smarter retrieval (“small model, big brain”): BM25-style lexical ranking + recency + strict context budget
-- Upgraded settings: curated phone-safe models, worker/cache toggles, device diagnostics, reset model runtime
+PocketBrain keeps **memory + retrieval local** on your phone, and can optionally borrow stronger reasoning from your LAN/home-lab model endpoint.
 
-## Stack
+## Modes
 
-- React + Vite + TypeScript
-- WebLLM (in-browser model inference)
-- IndexedDB (messages, rolling summary memory, settings)
-- `vite-plugin-pwa` for installable offline-ready behavior
-- GitHub Pages deployment via GitHub Actions
+### 1) Local Mode (default, privacy-first)
+- In-browser WebLLM inference
+- IndexedDB local memory
+- No remote prompt transfer
 
-## Features
+### 2) Bridge Mode (optional)
+- Route final compiled prompt to a user-configured endpoint:
+  - Ollama on LAN (`http://192.168.x.x:11434`)
+  - OpenAI-compatible server (`http://192.168.x.x:8000/v1`)
+- Memory and retrieval remain local; only final prompt leaves the device
 
-- Mobile-first chat UI with stop generation support
-- Status indicators (loading, ready, generating, error)
-- Local model bootstrap with worker fallback to main thread
-- Memory panel with pinned summary, search, and recent turns
-- Settings for local-only mode, model selection, diagnostics, export/import memory
+## v0.3.0 highlights
+- Bridge provider architecture (Local WebLLM / Ollama / OpenAI-compatible)
+- Streaming chat UX retained with unified provider routing
+- Provider badge in chat header
+- Bridge connection test in settings
+- GitHub Actions lockfile/caching fix for npm
 
-## Quick start
+## Local development
 
 ```bash
-npm install
+npm ci
+npm run lint
+npm run build
 npm run dev
 ```
 
-Build for production:
+## LAN Ollama quick setup
+1. Run Ollama on your PC/server (`ollama serve`).
+2. Ensure phone and host are on same network.
+3. In PocketBrain Settings:
+   - Provider: **Ollama Bridge**
+   - Endpoint: `http://<LAN-IP>:11434`
+   - Model: e.g. `llama3.2:3b`
+4. Use **Test Bridge Connection**.
 
-```bash
-npm run build
-npm run preview
-```
+> If browser CORS blocks direct Ollama access, use a tiny local proxy in front of Ollama (documented in `docs/PRIVACY.md`), then point PocketBrain to that proxy.
 
-## Install as PWA on phone
-
-1. Deploy to GitHub Pages and open the PocketBrain URL on your phone.
-2. In Safari (iOS): Share → **Add to Home Screen**.
-3. In Chrome (Android): menu → **Install app** / **Add to Home Screen**.
-4. Launch PocketBrain from your home screen for full-screen app mode.
+## GitHub Actions lockfile fix summary
+- Commit `package-lock.json` at repo root.
+- Use `npm ci` in CI.
+- Configure setup-node cache with:
+  - `cache: npm`
+  - `cache-dependency-path: package-lock.json`
 
 ## GitHub Pages deployment
+1. Push to `main`.
+2. In repo settings, set Pages source to **GitHub Actions**.
+3. Workflow builds and deploys static output from `dist`.
 
-1. Push repository to GitHub under `PocketBrain` (or update `vite.config.ts` base/scope if renamed).
-2. In GitHub, enable Pages source as **GitHub Actions**.
-3. Push to `main`; workflow builds and deploys static assets.
+## Troubleshooting
+### “Dependencies lock file is not found” in GitHub Actions
+Fix:
+1. Commit `package-lock.json` at repository root.
+2. Use `npm ci` (not `npm install`) in workflows.
+3. Set `cache-dependency-path: package-lock.json` in `actions/setup-node`.
 
-## Notes
-
-- WebLLM downloads model artifacts at runtime and caches in browser storage.
-- No model weights are bundled in this repository.
-- This starter is local-first and intentionally dependency-light.
+## Privacy note
+PocketBrain sends prompts only to endpoints explicitly configured by the user in Bridge Mode. No hidden telemetry.
 
 ## License
-
 Apache-2.0. See [LICENSE](./LICENSE).

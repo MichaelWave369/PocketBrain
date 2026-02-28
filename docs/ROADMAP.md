@@ -1,22 +1,17 @@
 # Roadmap
 
-## Current (starter)
+## v0.3.0 (current)
+- Provider bridge architecture (local + remote endpoint options)
+- Ollama bridge + OpenAI-compatible bridge
+- Local-first memory preserved under bridge routing
+- Actions lockfile/caching fix path documented
 
-- Phone-first PWA shell
-- WebLLM local inference integration
-- IndexedDB chat + summary memory
-- Basic retrieval (recent turns + pinned summary)
-- GitHub Pages CI/CD
+## v0.4.x ideas
+- Full streaming parsers for bridge providers (SSE/chunked)
+- Optional encrypted bridge credential storage
+- Bridge health auto-fallback policies
 
-## Phase 2 (native mobile wrapper)
-
-- Capacitor wrapper for iOS/Android
-- Native file access integration for export/import
-- Optional background sync for encrypted backup
-
-## Future ideas
-
-- Better ranking/retrieval pipeline
-- Streaming token output and interruption controls
-- Persona profiles and memory scopes
-- Prompt templates and tool invocation sandbox
+## Future
+- Native mobile wrapper integration
+- Multi-agent memory tools
+- Optional self-hosted sync with end-to-end encryption

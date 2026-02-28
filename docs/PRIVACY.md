@@ -1,12 +1,17 @@
 # Privacy
 
-PocketBrain is designed for local-first usage:
+PocketBrain defaults to local-first privacy.
 
-- Chat history is stored in browser IndexedDB on-device.
-- Model artifacts are fetched by WebLLM and cached in browser storage.
-- Memory export/import is user controlled.
-- No built-in analytics, telemetry, or remote backend in this starter.
+## Local mode
+- Inference, memory, and retrieval are local to the browser/device.
+- Chat history lives in IndexedDB.
 
-## Important caveat
+## Bridge mode
+- Prompts are sent only to the endpoint configured by the user.
+- Memory storage and retrieval still remain local.
+- PocketBrain does not include hidden telemetry.
 
-Model downloads are retrieved from external hosting used by WebLLM model distribution. If strict offline operation is required, pre-cache model assets in a controlled environment.
+## Ollama LAN note
+When connecting directly from browser to Ollama, CORS/network policy may block requests.
+
+If blocked, place a minimal local proxy (same LAN) in front of Ollama and configure PocketBrain to call the proxy.
