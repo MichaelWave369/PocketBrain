@@ -26,21 +26,23 @@ interface AppConfigModel {
 
 interface WebLlmModule {
   CreateMLCEngine: (
-    modelId: string,
+    modelId: string | string[],
     options?: {
-      appConfig?: unknown;
+      appConfig?: any;
       useIndexedDBCache?: boolean;
       initProgressCallback?: (report: ProgressReport) => void;
-    }
+    },
+    chatOptions?: any,
   ) => Promise<WebLlmEngine>;
   CreateWebWorkerMLCEngine: (
     worker: Worker,
     modelId: string,
     options?: {
-      appConfig?: unknown;
+      appConfig?: any;
       useIndexedDBCache?: boolean;
       initProgressCallback?: (report: ProgressReport) => void;
-    }
+    },
+    chatOptions?: any,
   ) => Promise<WebLlmEngine>;
   prebuiltAppConfig?: { model_list?: AppConfigModel[] };
 }
@@ -56,7 +58,8 @@ let cachedEngine: WebLlmEngine | null = null;
 let cachedKey: string | null = null;
 let failedState = false;
 
-const loadWebllm = async (): Promise<WebLlmModule> => import('@mlc-ai/web-llm');
+const loadWebllm = async (): Promise<WebLlmModule> =>
+  (await import('@mlc-ai/web-llm')) as unknown as WebLlmModule;
 
 const toChatMessages = (systemPrompt: string, context: string, userInput: string): ChatMessage[] => [
   { id: 'system', role: 'system', content: systemPrompt, createdAt: Date.now() },

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { StatusPill } from '../components/StatusPill';
 import { VoiceButton } from '../components/VoiceButton';
 import { useVoiceInput } from '../hooks/useVoiceInput';
@@ -13,6 +13,7 @@ interface ChatPageProps {
   summary: MemorySummary | null;
   voiceNotes: VoiceNote[];
   transcriptMemories: string[];
+  imageMemoryTexts?: string[];
   modelStatus: ModelStatus;
   modelError: string | null;
   modelProgressText: string;
@@ -36,6 +37,7 @@ export const ChatPage = ({
   summary,
   voiceNotes,
   transcriptMemories,
+  imageMemoryTexts = [],
   modelStatus,
   modelError,
   modelProgressText,
@@ -109,6 +111,12 @@ export const ChatPage = ({
     }
   };
 
+
+  const contextPreview = useMemo(
+    () => retrieveContext(messages, summary, draft, [...transcriptMemories, ...imageMemoryTexts]),
+    [messages, summary, draft, transcriptMemories, imageMemoryTexts]
+  );
+
   const handleSend = async () => {
     const content = draft.trim();
     if (!content || isStreaming || modelStatus === 'loading') {
@@ -124,7 +132,7 @@ export const ChatPage = ({
     try {
       const request: ProviderGenerateRequest = {
         systemPrompt: SYSTEM_PROMPT,
-        context: retrieveContext(messages, summary, content, transcriptMemories),
+        context: retrieveContext(messages, summary, content, [...transcriptMemories, ...imageMemoryTexts]),
         userInput: content
       };
 
@@ -200,6 +208,13 @@ export const ChatPage = ({
       {modelError ? <p className="error-text">{modelError}</p> : null}
       {voice.error ? <p className="error-text">{voice.error}</p> : null}
       {voiceNotice ? <p className="helper-text">{voiceNotice}</p> : null}
+
+      {contextPreview ? (
+        <article className="card context-preview">
+          <h3>Memory used for next reply</h3>
+          <p>{contextPreview}</p>
+        </article>
+      ) : null}
 
       {bridgeEnabled ? (
         <div className="voice-note-strip">
