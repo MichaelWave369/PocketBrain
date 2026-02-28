@@ -101,4 +101,9 @@ export class OpenAiCompatibleProvider implements ChatProvider {
   async transcribeAudio(): Promise<string> {
     throw new Error('Bridge transcription endpoint contract not configured yet.');
   }
+
+
+  async describeImage(): Promise<string> {
+    throw new Error('OpenAI-compatible image description endpoint is not configured yet.');
+  }
 }

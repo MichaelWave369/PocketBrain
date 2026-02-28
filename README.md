@@ -1,26 +1,25 @@
-# PocketBrain v0.4.0
+# PocketBrain v0.5.0
 
-PocketBrain is a phone-first PWA for private memory-first AI chat.
+PocketBrain is a phone-first, local-first PWA personal AI brain: it can listen, speak, see, remember, and privately sync across trusted devices.
 
-## Small phone, big brain
-PocketBrain keeps memory and retrieval local on your phone, and can optionally route final prompts to a trusted LAN bridge model.
+## Core principles
+- Local memory and retrieval first
+- Optional bridge to stronger models you control
+- Pairing-first sync, not cloud-account lock-in
+- No hidden telemetry
 
-## What’s new in v0.4.0
-- Voice input with recording states, cancel/retry, elapsed timer, and graceful fallback when browser transcription is unavailable.
-- Pairing-first bridge discovery (manual entry, trusted recents, pairing payload/file import/export, explicit known-host probe).
-- Encrypted backup and restore (Web Crypto AES-GCM + PBKDF2) with merge/replace import modes.
-- Voice notes stored locally, playable in Memory page, searchable only when transcript exists.
+## What's new in v0.5.0
+- **Voice output (TTS):** assistant replies can be spoken with browser-native voices and per-message Speak controls.
+- **Camera-to-memory ingestion:** capture or upload images, store locally, annotate, and include text fields in retrieval.
+- **Private device sync foundation:** trusted-device pairing UI and manual-first sync workflow with versioned protocol envelopes.
 
-## Modes
-### Local mode (default)
-- WebLLM in browser
-- Local IndexedDB memory and retrieval
-- No remote prompt transfer
-
-### Bridge mode (optional)
-- Ollama bridge on LAN
-- OpenAI-compatible bridge endpoint
-- Memory and retrieval stay local; only compiled prompt is sent to endpoint configured by user
+## Existing capabilities retained
+- Local WebLLM mode
+- Bridge mode (Ollama + OpenAI-compatible)
+- Voice input with graceful transcription fallback
+- Pairing-first LAN bridge discovery
+- Encrypted backup/restore
+- GitHub Actions lockfile fix
 
 ## Setup
 ```bash
@@ -28,55 +27,56 @@ npm ci
 npm run dev
 ```
 
-Build and checks:
+Checks and build:
 ```bash
 npm run lint
 npm run build
 ```
 
-## GitHub Actions lockfile fix (kept)
-- Root `package-lock.json` is committed.
-- Workflow uses `npm ci`.
-- setup-node cache points at `cache-dependency-path: package-lock.json`.
+## Bridge vs Sync
+- **Bridge** sends prompts to a configured model endpoint (LAN/server).
+- **Sync** keeps PocketBrain data aligned between trusted devices.
 
-## Pairing-first LAN discovery
-- Manual bridge endpoint entry
-- Reconnect recent successful endpoint
-- Pairing file import/export (JSON)
-- QR payload copy/paste path
-- Explicit known-host probe only after user action (no blind subnet scan)
+Bridge sends prompts only to endpoints you explicitly configure.
 
-## Voice input notes
-- Browser asks for microphone permission.
-- On supported browsers, speech recognition can insert transcript to draft.
-- On unsupported browsers, voice note is still saved locally and clearly marked as non-transcribed.
-- Bridge transcription is explicit/manual and currently stubbed by provider contract.
+## Camera and image memory
+- Capture from camera or upload files.
+- Images are saved locally with metadata.
+- Search works only from text fields (caption/notes/OCR/analysis), not raw pixels.
 
-## Local network permission notes
-Some browsers gate LAN calls behind local-network permission. If denied, bridge probes fail with clear errors.
+## TTS support notes
+- Uses browser SpeechSynthesis.
+- Voice list can load asynchronously.
+- If unsupported/no voices, chat continues normally.
 
-## Encrypted backups
-- Plain `.pocketbrain.json` export
-- Encrypted `.pocketbrain.enc.json` export
-- Encrypted export requires passphrase + confirmation
-- Wrong passphrase on import fails safely
-- Losing passphrase means encrypted backup cannot be recovered
+## GitHub Actions lockfile fix
+- Root `package-lock.json` committed.
+- `actions/setup-node@v4` + Node 20 + npm cache + `cache-dependency-path: package-lock.json`.
+- Install uses `npm ci`.
 
-## GitHub Pages deployment
-1. Push to `main`
-2. Enable Pages source = GitHub Actions
-3. Workflow builds and deploys `dist`
+## GitHub Pages
+Push to `main` with Pages source set to GitHub Actions; workflow builds and deploys `dist`.
 
 ## Troubleshooting
-- **Microphone denied**: re-enable mic permission in browser site settings.
-- **Speech recognition unavailable**: browser does not expose speech API; voice note is saved without transcript.
-- **Bridge discovery blocked**: local-network permission or firewall blocked access.
-- **CORS failure to LAN bridge**: configure bridge/proxy CORS headers.
-- **Encrypted backup wrong passphrase**: import fails safely; retry with correct passphrase.
-- **Actions lockfile issue**: keep root `package-lock.json`, use `npm ci`, and `cache-dependency-path: package-lock.json`.
+- **Microphone denied:** allow mic permissions for site.
+- **Speech recognition unavailable:** voice note still saves locally; transcription may be unavailable.
+- **No voices available:** browser/OS may not expose TTS voices.
+- **Speech interrupted:** backgrounding tab or audio focus can pause speech.
+- **Camera denied:** allow camera permission and retry capture.
+- **Image too large:** use smaller image or compression preference.
+- **Bridge discovery blocked / CORS:** check local-network permission, firewall, and endpoint CORS config.
+- **Sync pairing failure:** re-pair using fresh payload/QR and ensure both apps are active.
+- **Encrypted backup wrong passphrase:** decryption fails safely; retry with exact passphrase.
+- **Actions lockfile error:** commit root lockfile, use `npm ci`, set `cache-dependency-path: package-lock.json`.
 
-## Privacy
-No hidden telemetry. Bridge mode sends prompts only to the endpoint you explicitly configure.
+## Docs
+- `docs/ARCHITECTURE.md`
+- `docs/PRIVACY.md`
+- `docs/ROADMAP.md`
+- `docs/BRIDGE_PAIRING.md`
+- `docs/TTS.md`
+- `docs/CAPTURE.md`
+- `docs/SYNC.md`
 
 ## License
 Apache-2.0

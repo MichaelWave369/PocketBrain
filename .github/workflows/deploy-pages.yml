@@ -29,8 +29,7 @@ jobs:
           cache-dependency-path: package-lock.json
 
       - name: Install
-        run: |
-          npm ci || (echo "npm ci failed, falling back to npm install for lockfile recovery" && npm install)
+        run: npm ci
 
       - name: Build
         run: npm run build

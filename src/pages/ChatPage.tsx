@@ -1,24 +1,31 @@
 import { useEffect, useRef, useState } from 'react';
 import { StatusPill } from '../components/StatusPill';
+import { SyncStatusBadge } from '../components/SyncStatusBadge';
 import { VoiceButton } from '../components/VoiceButton';
 import { useVoiceInput } from '../hooks/useVoiceInput';
+import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis';
 import { retrieveContext } from '../retrieval/retriever';
 import type { ProviderGenerateRequest } from '../providers/types';
 import type { ChatMessage, MemorySummary, ModelStatus } from '../types';
 import type { VoiceNote } from '../voice/types';
+import type { ImageMemory } from '../camera/types';
+import type { TtsSettings } from '../tts/types';
 import { createId } from '../utils/id';
 
 interface ChatPageProps {
   messages: ChatMessage[];
   summary: MemorySummary | null;
   voiceNotes: VoiceNote[];
+  imageMemories: ImageMemory[];
   transcriptMemories: string[];
   modelStatus: ModelStatus;
   modelError: string | null;
   modelProgressText: string;
   modelProgressPct: number | null;
   activeProviderLabel: string;
+  syncStatusLabel: string;
   bridgeEnabled: boolean;
+  ttsSettings: TtsSettings;
   onGenerateWithProvider: (request: ProviderGenerateRequest, onChunk: (chunk: string) => void) => Promise<void>;
   onSend: (userMessage: ChatMessage, assistantMessage: ChatMessage) => Promise<void>;
   onSaveVoiceNote: (note: VoiceNote) => Promise<void>;
@@ -35,13 +42,16 @@ export const ChatPage = ({
   messages,
   summary,
   voiceNotes,
+  imageMemories,
   transcriptMemories,
   modelStatus,
   modelError,
   modelProgressText,
   modelProgressPct,
   activeProviderLabel,
+  syncStatusLabel,
   bridgeEnabled,
+  ttsSettings,
   onGenerateWithProvider,
   onSend,
   onSaveVoiceNote,
@@ -59,6 +69,7 @@ export const ChatPage = ({
   const listRef = useRef<HTMLDivElement>(null);
 
   const voice = useVoiceInput();
+  const tts = useSpeechSynthesis(ttsSettings);
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
@@ -71,9 +82,7 @@ export const ChatPage = ({
 
   const handleVoiceStop = async () => {
     const result = await voice.stopRecording();
-    if (!result) {
-      return;
-    }
+    if (!result) return;
 
     const id = createId();
     const note: VoiceNote = {
@@ -111,9 +120,7 @@ export const ChatPage = ({
 
   const handleSend = async () => {
     const content = draft.trim();
-    if (!content || isStreaming || modelStatus === 'loading') {
-      return;
-    }
+    if (!content || isStreaming || modelStatus === 'loading') return;
 
     const userMessage: ChatMessage = { id: createId(), role: 'user', content, createdAt: Date.now() };
     setPendingUserMessage(userMessage);
@@ -122,9 +129,13 @@ export const ChatPage = ({
     setIsStreaming(true);
 
     try {
+      const imageTexts = imageMemories
+        .map((image) => [image.caption, image.notes, image.ocrText, image.analysisSummary].filter(Boolean).join(' ').trim())
+        .filter(Boolean);
+
       const request: ProviderGenerateRequest = {
         systemPrompt: SYSTEM_PROMPT,
-        context: retrieveContext(messages, summary, content, transcriptMemories),
+        context: retrieveContext(messages, summary, content, [...transcriptMemories, ...imageTexts]),
         userInput: content
       };
 
@@ -143,6 +154,9 @@ export const ChatPage = ({
       };
 
       await onSend(userMessage, assistantMessage);
+      if (ttsSettings.autoReadReplies) {
+        tts.speak(assistantContent);
+      }
     } catch (error) {
       console.error(error);
       setStreamingText('Generation stopped or failed. Try provider connection test or reset model.');
@@ -154,9 +168,7 @@ export const ChatPage = ({
   };
 
   const renderedMessages = [...messages];
-  if (pendingUserMessage && isStreaming) {
-    renderedMessages.push(pendingUserMessage);
-  }
+  if (pendingUserMessage && isStreaming) renderedMessages.push(pendingUserMessage);
 
   return (
     <section className="panel chat-panel">
@@ -164,27 +176,13 @@ export const ChatPage = ({
         <div className="provider-badge-wrap">
           <StatusPill status={isStreaming ? 'generating' : modelStatus} />
           <span className="provider-badge">{activeProviderLabel}</span>
+          <SyncStatusBadge label={syncStatusLabel} />
         </div>
         <div className="chat-actions">
-          <VoiceButton
-            state={voice.state}
-            elapsedLabel={voice.elapsedLabel}
-            onStart={voice.beginRecording}
-            onStop={handleVoiceStop}
-            onCancel={voice.cancelRecording}
-            onRetry={voice.retry}
-          />
-          {isStreaming ? (
-            <button className="ghost danger" onClick={() => void handleStop()}>
-              Stop
-            </button>
-          ) : null}
-          <button className="ghost" onClick={() => void onClear()}>
-            Clear chat
-          </button>
-          <button className="ghost" onClick={() => void onResetModel()}>
-            Reset runtime
-          </button>
+          <VoiceButton state={voice.state} elapsedLabel={voice.elapsedLabel} onStart={voice.beginRecording} onStop={handleVoiceStop} onCancel={voice.cancelRecording} onRetry={voice.retry} />
+          {isStreaming ? <button className="ghost danger" onClick={() => void handleStop()}>Stop</button> : null}
+          <button className="ghost" onClick={() => void onClear()}>Clear chat</button>
+          <button className="ghost" onClick={() => void onResetModel()}>Reset runtime</button>
         </div>
       </div>
 
@@ -200,16 +198,12 @@ export const ChatPage = ({
       {modelError ? <p className="error-text">{modelError}</p> : null}
       {voice.error ? <p className="error-text">{voice.error}</p> : null}
       {voiceNotice ? <p className="helper-text">{voiceNotice}</p> : null}
+      {tts.error ? <p className="helper-text">TTS: {tts.error}</p> : null}
 
       {bridgeEnabled ? (
         <div className="voice-note-strip">
           {voiceNotes.filter((note) => !note.transcript).slice(0, 2).map((note) => (
-            <button
-              key={note.id}
-              className="ghost"
-              onClick={() => void transcribeWithBridge(note)}
-              disabled={bridgeTranscribingId === note.id}
-            >
+            <button key={note.id} className="ghost" onClick={() => void transcribeWithBridge(note)} disabled={bridgeTranscribingId === note.id}>
               {bridgeTranscribingId === note.id ? 'Transcribing…' : 'Transcribe using Bridge'}
             </button>
           ))}
@@ -217,13 +211,16 @@ export const ChatPage = ({
       ) : null}
 
       <div className="message-list" ref={listRef}>
-        {renderedMessages.length === 0 ? (
-          <p className="helper-text">Small phone, big brain: your memory stays local, provider can be local or bridge.</p>
-        ) : null}
+        {renderedMessages.length === 0 ? <p className="helper-text">Small phone, big brain: listen, speak, see, remember, sync.</p> : null}
         {renderedMessages.map((message) => (
           <article key={message.id} className={`message message-${message.role}`}>
             <strong>{message.role === 'user' ? 'You' : 'PocketBrain'}</strong>
             <p>{message.content}</p>
+            {message.role === 'assistant' ? (
+              <button className="ghost speak-btn" onClick={() => (tts.isSpeakingText(message.content) ? tts.stop() : tts.speak(message.content))} aria-label="Speak assistant message">
+                {tts.isSpeakingText(message.content) ? '⏹ Stop speaking' : '🔊 Speak'}
+              </button>
+            ) : null}
           </article>
         ))}
 
@@ -236,15 +233,8 @@ export const ChatPage = ({
       </div>
 
       <div className="composer">
-        <textarea
-          placeholder="Type your message"
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          rows={2}
-        />
-        <button onClick={() => void handleSend()} disabled={isStreaming || !draft.trim() || modelStatus === 'loading'}>
-          Send
-        </button>
+        <textarea placeholder="Type your message" value={draft} onChange={(event) => setDraft(event.target.value)} rows={2} />
+        <button onClick={() => void handleSend()} disabled={isStreaming || !draft.trim() || modelStatus === 'loading'}>Send</button>
       </div>
     </section>
   );

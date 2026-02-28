@@ -1,23 +1,18 @@
 # Privacy
 
-PocketBrain defaults to local-only memory and retrieval.
+PocketBrain defaults to local-only behavior.
 
-## Local-first behavior
-- Messages, summaries, settings, voice notes, and trusted bridges are stored in browser IndexedDB.
-- No analytics or hidden telemetry are shipped.
+- Chats, summaries, voice notes, and image memories are stored locally in IndexedDB.
+- No hidden telemetry.
+- No mandatory cloud account.
 
 ## Bridge mode
-- Prompts are sent only to endpoints explicitly configured by the user.
-- Bridge pairing/discovery is user-driven; there is no blind subnet scanning.
+When enabled, PocketBrain sends compiled prompts to the user-configured endpoint only.
 
-## Voice
-- Microphone capture is explicit by user interaction.
-- If browser speech recognition is unavailable, audio remains local as a voice note unless user manually chooses bridge transcription.
+## Voice and camera
+- Microphone and camera access require explicit browser permissions.
+- Captured media remains local unless user explicitly exports/syncs/analyzes via bridge.
 
-## Backups
-- Plain backups are readable JSON.
-- Encrypted backups use PBKDF2 + AES-GCM in browser.
-- Losing passphrase means encrypted backup cannot be recovered.
-
-## CORS and LAN
-Browsers may block LAN access due to CORS/local-network permissions. You may need a local proxy/helper with explicit CORS policy.
+## Sync
+- Sync requires explicit trusted-device pairing.
+- Users can revoke trusted devices at any time.
