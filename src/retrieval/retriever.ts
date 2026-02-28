@@ -81,12 +81,6 @@ export const searchMessages = (
     ...toMemoryMessages(options?.imageMemories, 'image')
   ];
 
-  const allMessages = [
-    ...messages,
-    ...toMemoryMessages(options?.transcriptMemories, 'voice'),
-    ...toMemoryMessages(options?.imageMemories, 'image')
-  ];
-
   return allMessages
     .map((message) => {
       const tokens = tokenizeText(message.content);

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppLayout } from './layouts/AppLayout';
 import { fromImageMemoryData, fromVoiceNoteData, toImageMemoryData, toVoiceNoteData, type BackupData, type ImportMode } from './backup/types';
@@ -10,7 +10,6 @@ import {
   clearMessages,
   clearSummaries,
   clearVoiceNotes,
-  deleteImageMemory,
   deleteTrustedDevice,
   deleteVoiceNote,
   getImageMemories,
@@ -40,22 +39,6 @@ import type { SyncPreferences, TrustedDevice } from './sync/types';
 import type { AppSettings, ChatMessage, DeviceDiagnostics, MemorySummary, ModelStatus } from './types';
 import type { VoiceNote } from './voice/types';
 import type { ImageMemory } from './camera/types';
-
-
-interface ImageMemory {
-  id: string;
-  caption?: string;
-  notes?: string;
-  analysisSummary?: string;
-}
-
-
-interface ImageMemory {
-  id: string;
-  caption?: string;
-  notes?: string;
-  analysisSummary?: string;
-}
 
 const DEFAULT_SETTINGS: AppSettings = {
   localOnlyMode: true,
@@ -92,7 +75,7 @@ const DEFAULT_DIAGNOSTICS: DeviceDiagnostics = {
 export const App = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [voiceNotes, setVoiceNotes] = useState<VoiceNote[]>([]);
-  const [imageMemories] = useState<ImageMemory[]>([]);
+  const [imageMemories, setImageMemories] = useState<ImageMemory[]>([]);
   const [summary, setSummary] = useState<MemorySummary | null>(null);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [trustedBridgeEndpoints, setTrustedBridgeEndpoints] = useState<string[]>([]);
@@ -211,7 +194,7 @@ export const App = () => {
   const onDescribeImageWithBridge = async (imageBlob: Blob): Promise<string> => {
     const provider = getProvider(settings.providerType);
     if (!provider.describeImage) throw new Error('Bridge image analysis unavailable for this provider.');
-    return provider.describeImage(imageBlob, 'Summarize this image for memory indexing.');
+    return provider.describeImage(imageBlob, { prompt: 'Summarize this image for memory indexing.' });
   };
 
   const onSaveVoiceNote = async (note: VoiceNote) => {
@@ -222,35 +205,6 @@ export const App = () => {
   const onDeleteVoiceNote = async (id: string) => {
     await deleteVoiceNote(id);
     setVoiceNotes((prev) => prev.filter((note) => note.id !== id));
-  };
-
-  const onSaveImage = async (image: ImageMemory) => {
-    await saveImageMemory(image);
-    setImageMemories((prev) => [image, ...prev]);
-  };
-
-  const onUpdateImage = async (image: ImageMemory) => {
-    await saveImageMemory(image);
-    setImageMemories((prev) => prev.map((entry) => (entry.id === image.id ? image : entry)));
-  };
-
-  const onDeleteImage = async (id: string) => {
-    await deleteImageMemory(id);
-    setImageMemories((prev) => prev.filter((image) => image.id !== id));
-  };
-
-  const onAttachImageToChat = (id: string) => {
-    const image = imageMemories.find((entry) => entry.id === id);
-    if (!image) return;
-    const note = image.caption || image.notes || image.analysisSummary || 'image memory';
-    const userMessage: ChatMessage = {
-      id: `img-${id}-${Date.now()}`,
-      role: 'user',
-      content: `[Attached image memory] ${note}`,
-      createdAt: Date.now()
-    };
-    setMessages((prev) => [...prev, userMessage]);
-    void saveMessage(userMessage);
   };
 
   const onSettingsChange = async (next: AppSettings) => {
