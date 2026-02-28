@@ -4,9 +4,9 @@ import { parseBackupFile, unpackBackupData, isEncryptedPackage } from '../backup
 import { summarizeBackup, type BackupData, type ImportMode } from '../backup/types';
 
 interface BackupPanelProps {
-  onExportData: () => Promise<BackupData>;
+  onExportData: (options: { includeVoiceBlobs: boolean; includeImageBlobs: boolean; metadataOnly: boolean }) => Promise<BackupData>;
   onImportData: (data: BackupData, mode: ImportMode) => Promise<void>;
-  onClearData: (scope: 'chats' | 'summaries' | 'voice' | 'bridges' | 'all') => Promise<void>;
+  onClearData: (scope: 'chats' | 'summaries' | 'voice' | 'images' | 'bridges' | 'all') => Promise<void>;
 }
 
 export const BackupPanel = ({ onExportData, onImportData, onClearData }: BackupPanelProps) => {
@@ -19,12 +19,15 @@ export const BackupPanel = ({ onExportData, onImportData, onClearData }: BackupP
   const [importFile, setImportFile] = useState<File | null>(null);
   const [status, setStatus] = useState('');
   const [typedConfirm, setTypedConfirm] = useState('');
+  const [includeVoiceBlobs, setIncludeVoiceBlobs] = useState(true);
+  const [includeImageBlobs, setIncludeImageBlobs] = useState(true);
 
   const preview = useMemo(() => (importPreview ? summarizeBackup(importPreview) : null), [importPreview]);
 
   const runExport = async () => {
     setStatus('Preparing export...');
-    const data = await onExportData();
+    const metadataOnly = !includeVoiceBlobs && !includeImageBlobs;
+    const data = await onExportData({ includeVoiceBlobs, includeImageBlobs, metadataOnly });
 
     if (encryptExport) {
       if (!passphrase || passphrase !== confirmPassphrase) {
@@ -35,6 +38,9 @@ export const BackupPanel = ({ onExportData, onImportData, onClearData }: BackupP
 
     const backupPackage = await createBackupPackage(data, {
       encrypted: encryptExport,
+      includeVoiceBlobs,
+      includeImageBlobs,
+      metadataOnly,
       passphrase: encryptExport ? passphrase : undefined
     });
     downloadBackupPackage(backupPackage, encryptExport);
@@ -66,7 +72,7 @@ export const BackupPanel = ({ onExportData, onImportData, onClearData }: BackupP
     setStatus(`✅ Backup imported (${importMode}).`);
   };
 
-  const clearScope = async (scope: 'chats' | 'summaries' | 'voice' | 'bridges' | 'all') => {
+  const clearScope = async (scope: 'chats' | 'summaries' | 'voice' | 'images' | 'bridges' | 'all') => {
     if (scope === 'all' && typedConfirm !== 'DELETE') {
       setStatus('Type DELETE to clear all local data.');
       return;
@@ -104,6 +110,15 @@ export const BackupPanel = ({ onExportData, onImportData, onClearData }: BackupP
           </>
         ) : null}
 
+        <label className="settings-row">
+          <span>Include voice blobs</span>
+          <input type="checkbox" checked={includeVoiceBlobs} onChange={(event) => setIncludeVoiceBlobs(event.target.checked)} />
+        </label>
+        <label className="settings-row">
+          <span>Include image blobs</span>
+          <input type="checkbox" checked={includeImageBlobs} onChange={(event) => setIncludeImageBlobs(event.target.checked)} />
+        </label>
+
         <button className="ghost" onClick={() => void runExport()}>
           {encryptExport ? 'Export Encrypted Backup' : 'Export Plain Backup'}
         </button>
@@ -131,7 +146,7 @@ export const BackupPanel = ({ onExportData, onImportData, onClearData }: BackupP
         {preview ? (
           <p className="helper-text">
             Preview: {preview.messageCount} messages, {preview.summaryCount} summaries, {preview.voiceNoteCount} voice
-            notes, settings: {preview.settingsIncluded ? 'yes' : 'no'}, created {preview.createdAt}.
+            notes, {preview.imageCount} image memories, settings: {preview.settingsIncluded ? 'yes' : 'no'}, created {preview.createdAt}.
           </p>
         ) : null}
 
@@ -146,6 +161,7 @@ export const BackupPanel = ({ onExportData, onImportData, onClearData }: BackupP
         <button className="ghost" onClick={() => void clearScope('chats')}>Clear chats</button>
         <button className="ghost" onClick={() => void clearScope('summaries')}>Clear summaries</button>
         <button className="ghost" onClick={() => void clearScope('voice')}>Clear voice notes</button>
+        <button className="ghost" onClick={() => void clearScope('images')}>Clear image memories</button>
         <button className="ghost" onClick={() => void clearScope('bridges')}>Clear bridge settings</button>
       </div>
       <input

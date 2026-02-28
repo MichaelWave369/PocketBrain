@@ -1,4 +1,4 @@
-# PocketBrain v0.4.0
+# PocketBrain v0.5.0
 
 PocketBrain is a **private, phone-first, local-first AI brain**.
 

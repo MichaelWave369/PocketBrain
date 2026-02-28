@@ -1,32 +1,6 @@
 import type { ChatMessage, MemorySummary } from '../types';
 
-const STOPWORDS = new Set([
-  'a',
-  'an',
-  'and',
-  'the',
-  'to',
-  'for',
-  'of',
-  'in',
-  'on',
-  'at',
-  'is',
-  'it',
-  'be',
-  'as',
-  'are',
-  'this',
-  'that',
-  'with',
-  'or',
-  'by',
-  'from',
-  'i',
-  'you',
-  'we',
-  'they'
-]);
+const STOPWORDS = new Set(['a','an','and','the','to','for','of','in','on','at','is','it','be','as','are','this','that','with','or','by','from','i','you','we','they']);
 
 const RELEVANT_TOP_K = 6;
 const RECENT_TURNS = 6;
@@ -43,25 +17,35 @@ const toMemoryMessages = (items: string[] | undefined, prefix: 'voice' | 'image'
       createdAt: 0
     }));
 
+export interface RetrievalOptions {
+  userInput: string;
+  draftInput?: string;
+  transcriptMemories?: string[];
+  imageMemories?: string[];
+}
+
+const toMemoryMessages = (items: string[] | undefined, prefix: 'voice' | 'image'): ChatMessage[] =>
+  (items ?? [])
+    .map((text) => text.trim())
+    .filter(Boolean)
+    .map((text, index) => ({
+      id: `${prefix}-${index}`,
+      role: 'assistant' as const,
+      content: prefix === 'image' ? `Image memory: ${text}` : text,
+      createdAt: 0
+    }));
+
 export const tokenizeText = (text: string): string[] =>
-  text
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .split(/\s+/)
-    .filter((token) => token.length > 1 && !STOPWORDS.has(token));
+  text.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter((token) => token.length > 1 && !STOPWORDS.has(token));
 
 const truncateToBudget = (parts: string[]): string => {
   let total = 0;
   const kept: string[] = [];
-
   for (const part of parts) {
-    if (total + part.length > CONTEXT_BUDGET) {
-      break;
-    }
+    if (total + part.length > CONTEXT_BUDGET) break;
     kept.push(part);
     total += part.length;
   }
-
   return kept.join('\n\n');
 };
 
@@ -103,9 +87,7 @@ export const searchMessages = (
   options?: { transcriptMemories?: string[]; imageMemories?: string[] }
 ): ChatMessage[] => {
   const queryTokens = tokenizeText(query);
-  if (!queryTokens.length) {
-    return [];
-  }
+  if (!queryTokens.length) return [];
 
   const allMessages = [
     ...messages,

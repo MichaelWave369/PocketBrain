@@ -1,17 +1,16 @@
 # Roadmap
 
-## v0.4.0 (current)
-- Voice capture UX and local voice note persistence
-- Pairing-first LAN bridge discovery
-- Encrypted backup/export/import
-- Local-first memory remains default
+## Shipped (v0.5.0)
+- Local WebLLM and bridge provider routing
+- Voice input + local note fallback
+- Pairing-first bridge setup
+- Encrypted backup/import
+- Voice output (TTS)
+- Camera/image memory ingestion
+- Private sync foundation (manual-first trusted pairing)
 
-## v0.5.x
-- Full streaming bridge provider support (SSE/chunk parser)
-- Optional bridge speech-to-text endpoint integration
-- Better bridge trust management and endpoint signatures
-
-## Future
-- Native wrapper enhancements
-- End-to-end encrypted sync options
-- Desktop companion helper implementation
+## Next
+- Stronger real-time peer sync transport flow
+- Optional desktop helper for pairing/signaling
+- Optional OCR/STT/vision bridge adapters
+- Better large attachment chunking and resumable sync

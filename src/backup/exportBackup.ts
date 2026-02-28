@@ -1,19 +1,24 @@
-import type { BackupData, BackupPackage, EncryptedBackupEnvelope } from './types';
 import { encryptJson } from './crypto';
+import type { BackupData, BackupExportOptions, BackupPackage, EncryptedBackupEnvelope } from './types';
 
-export const createBackupPackage = async (
-  data: BackupData,
-  options: { encrypted: boolean; passphrase?: string }
-): Promise<BackupPackage> => {
+export const createBackupPackage = async (data: BackupData, options: BackupExportOptions): Promise<BackupPackage> => {
+  const normalized: BackupData = {
+    ...data,
+    voiceNotes: options.metadataOnly ? data.voiceNotes.map((note) => ({ ...note, base64Audio: undefined })) : data.voiceNotes,
+    imageMemories: options.metadataOnly
+      ? data.imageMemories.map((image) => ({ ...image, base64Image: undefined }))
+      : data.imageMemories
+  };
+
   if (!options.encrypted) {
-    return data;
+    return normalized;
   }
 
   if (!options.passphrase) {
     throw new Error('Passphrase is required for encrypted export.');
   }
 
-  const encrypted = await encryptJson(JSON.stringify(data), options.passphrase);
+  const encrypted = await encryptJson(JSON.stringify(normalized), options.passphrase);
   const envelope: EncryptedBackupEnvelope = {
     version: 1,
     encrypted: true,
