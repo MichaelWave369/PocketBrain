@@ -29,6 +29,7 @@ import {
   saveVoiceNote
 } from './memory/indexedDb';
 import { updateRollingSummary } from './memory/summary';
+import { CapturePage } from './pages/CapturePage';
 import { ChatPage } from './pages/ChatPage';
 import { MemoryPage } from './pages/MemoryPage';
 import { SettingsPage } from './pages/SettingsPage';
@@ -352,6 +353,10 @@ export const App = () => {
               onResetModel={onResetModel}
             />
           }
+        />
+        <Route
+          path="/capture"
+          element={<CapturePage images={imageMemories} onSaveImage={onSaveImage} onUpdateImage={onUpdateImage} onDeleteImage={onDeleteImage} onAttachImageToChat={onAttachImageToChat} />}
         />
         <Route
           path="/memory"
