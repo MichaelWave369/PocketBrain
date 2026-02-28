@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { BridgePairingPanel } from '../components/BridgePairingPanel';
 import { BackupPanel } from '../components/BackupPanel';
+import { SyncPanel } from '../components/SyncPanel';
+import { TTSControls } from '../components/TTSControls';
+import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis';
 import type { BackupData, ImportMode } from '../backup/types';
+import type { SyncPreferences, TrustedDevice } from '../sync/types';
 import type { AppSettings, DeviceDiagnostics } from '../types';
 
 interface SettingsPageProps {
@@ -10,13 +14,19 @@ interface SettingsPageProps {
   providerOptions: Array<{ value: AppSettings['providerType']; label: string }>;
   diagnostics: DeviceDiagnostics;
   trustedBridgeEndpoints: string[];
+  trustedDevices: TrustedDevice[];
+  syncPreferences: SyncPreferences;
+  onSyncPreferencesChange: (next: SyncPreferences) => void;
   onSettingsChange: (next: AppSettings) => void;
   onResetModel: () => Promise<void>;
   onTestBridgeConnection: () => Promise<{ ok: boolean; message: string }>;
   onApplyPairing: (patch: Partial<AppSettings>) => void;
-  onExportData: () => Promise<BackupData>;
+  onExportData: (options: { includeVoiceBlobs: boolean; includeImageBlobs: boolean; metadataOnly: boolean }) => Promise<BackupData>;
   onImportData: (data: BackupData, mode: ImportMode) => Promise<void>;
-  onClearData: (scope: 'chats' | 'summaries' | 'voice' | 'bridges' | 'all') => Promise<void>;
+  onClearData: (scope: 'chats' | 'summaries' | 'voice' | 'images' | 'bridges' | 'all') => Promise<void>;
+  onTrustDevice: (device: TrustedDevice) => Promise<void>;
+  onRevokeDevice: (deviceId: string) => Promise<void>;
+  onDescribeImageWithBridge: (imageBlob: Blob) => Promise<string>;
 }
 
 export const SettingsPage = ({
@@ -25,20 +35,33 @@ export const SettingsPage = ({
   providerOptions,
   diagnostics,
   trustedBridgeEndpoints,
+  trustedDevices,
+  syncPreferences,
+  onSyncPreferencesChange,
   onSettingsChange,
   onResetModel,
   onTestBridgeConnection,
   onApplyPairing,
   onExportData,
   onImportData,
-  onClearData
+  onClearData,
+  onTrustDevice,
+  onRevokeDevice,
+  onDescribeImageWithBridge
 }: SettingsPageProps) => {
   const [connectionStatus, setConnectionStatus] = useState<string | null>(null);
+  const [visionStatus, setVisionStatus] = useState('');
+  const tts = useSpeechSynthesis({
+    enabled: settings.ttsEnabled,
+    autoReadReplies: settings.ttsAutoReadReplies,
+    voiceURI: settings.ttsVoiceURI,
+    rate: settings.ttsRate,
+    pitch: settings.ttsPitch,
+    volume: settings.ttsVolume
+  });
 
   const isBridgeProvider = settings.providerType !== 'local-webllm';
-
-  const bridgePlaceholder =
-    settings.providerType === 'ollama-bridge' ? 'http://192.168.x.x:11434' : 'http://192.168.x.x:8000/v1';
+  const bridgePlaceholder = settings.providerType === 'ollama-bridge' ? 'http://192.168.x.x:11434' : 'http://192.168.x.x:8000/v1';
 
   const handleConnectionTest = async () => {
     const result = await onTestBridgeConnection();
@@ -50,188 +73,115 @@ export const SettingsPage = ({
       <h2>Settings</h2>
 
       <article className="card">
-        <p className="helper-text">
-          Small phone, big brain: PocketBrain keeps memory local and can optionally borrow a stronger model over your
-          network.
-        </p>
+        <p className="helper-text">Bridge sends prompts to stronger models. Sync shares your PocketBrain data across trusted devices.</p>
       </article>
 
       <article className="card">
         <label className="settings-row">
           <span>Provider</span>
-          <select
-            value={settings.providerType}
-            onChange={(event) => onSettingsChange({ ...settings, providerType: event.target.value as AppSettings['providerType'] })}
-          >
-            {providerOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
+          <select value={settings.providerType} onChange={(event) => onSettingsChange({ ...settings, providerType: event.target.value as AppSettings['providerType'] })}>
+            {providerOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
           </select>
         </label>
       </article>
 
       <article className="card">
         <label className="settings-row">
-          <span>Local-only mode</span>
-          <input
-            type="checkbox"
-            checked={settings.localOnlyMode}
-            onChange={(event) => onSettingsChange({ ...settings, localOnlyMode: event.target.checked })}
-          />
-        </label>
-      </article>
-
-      <article className="card">
-        <label className="settings-field">
           <span>Local model selection</span>
-          <select
-            value={settings.selectedModel}
-            onChange={(event) => onSettingsChange({ ...settings, selectedModel: event.target.value })}
-          >
-            {modelOptions.map((modelId) => (
-              <option key={modelId} value={modelId}>
-                {modelId}
-              </option>
-            ))}
+          <select value={settings.selectedModel} onChange={(event) => onSettingsChange({ ...settings, selectedModel: event.target.value })}>
+            {modelOptions.map((modelId) => <option key={modelId} value={modelId}>{modelId}</option>)}
           </select>
         </label>
       </article>
 
       {isBridgeProvider ? (
-        <>
-          <article className="card">
-            <label className="settings-field">
-              <span>Bridge endpoint URL</span>
-              <input
-                placeholder={bridgePlaceholder}
-                value={settings.bridgeEndpointUrl}
-                onChange={(event) => onSettingsChange({ ...settings, bridgeEndpointUrl: event.target.value })}
-              />
-            </label>
-
-            <label className="settings-field">
-              <span>Bridge model name</span>
-              <input
-                placeholder={settings.providerType === 'ollama-bridge' ? 'llama3.2:3b' : 'gpt-4o-mini'}
-                value={settings.bridgeModelName}
-                onChange={(event) => onSettingsChange({ ...settings, bridgeModelName: event.target.value })}
-              />
-            </label>
-
-            <label className="settings-field">
-              <span>API key (optional)</span>
-              <input
-                type="password"
-                placeholder="sk-..."
-                value={settings.bridgeApiKey}
-                onChange={(event) => onSettingsChange({ ...settings, bridgeApiKey: event.target.value })}
-              />
-            </label>
-
-            <label className="settings-row">
-              <span>Remember this bridge</span>
-              <input
-                type="checkbox"
-                checked={settings.rememberBridgeSettings}
-                onChange={(event) => onSettingsChange({ ...settings, rememberBridgeSettings: event.target.checked })}
-              />
-            </label>
-
-            <label className="settings-row">
-              <span>Use bridge only when local model unavailable</span>
-              <input
-                type="checkbox"
-                checked={settings.bridgeFallbackToLocal}
-                onChange={(event) => onSettingsChange({ ...settings, bridgeFallbackToLocal: event.target.checked })}
-              />
-            </label>
-
-            <div className="settings-actions">
-              <button className="ghost" onClick={() => void handleConnectionTest()}>
-                Test Bridge Connection
-              </button>
-              {trustedBridgeEndpoints[0] ? (
-                <button
-                  className="ghost"
-                  onClick={() =>
-                    onApplyPairing({
-                      bridgeEndpointUrl: trustedBridgeEndpoints[0]
-                    })
-                  }
-                >
-                  Reconnect recent endpoint
-                </button>
-              ) : null}
-            </div>
-
-            {connectionStatus ? <p className="helper-text">{connectionStatus}</p> : null}
-            <p className="helper-text">
-              Pairing-first discovery: no blind subnet scanning. Probe runs only after you explicitly tap it.
-            </p>
-          </article>
-
-          <BridgePairingPanel
-            settings={settings}
-            onApplyPairing={onApplyPairing}
-            lastSuccessfulBridge={trustedBridgeEndpoints[0] ?? null}
-          />
-        </>
+        <article className="card">
+          <label className="settings-field">
+            <span>Bridge endpoint URL</span>
+            <input placeholder={bridgePlaceholder} value={settings.bridgeEndpointUrl} onChange={(event) => onSettingsChange({ ...settings, bridgeEndpointUrl: event.target.value })} />
+          </label>
+          <label className="settings-field">
+            <span>Bridge model name</span>
+            <input value={settings.bridgeModelName} onChange={(event) => onSettingsChange({ ...settings, bridgeModelName: event.target.value })} />
+          </label>
+          <label className="settings-field">
+            <span>API key (optional)</span>
+            <input type="password" value={settings.bridgeApiKey} onChange={(event) => onSettingsChange({ ...settings, bridgeApiKey: event.target.value })} />
+          </label>
+          <div className="settings-actions">
+            <button className="ghost" onClick={() => void handleConnectionTest()}>Test Bridge Connection</button>
+            {trustedBridgeEndpoints[0] ? <button className="ghost" onClick={() => onApplyPairing({ bridgeEndpointUrl: trustedBridgeEndpoints[0] })}>Reconnect recent endpoint</button> : null}
+          </div>
+          {connectionStatus ? <p className="helper-text">{connectionStatus}</p> : null}
+        </article>
       ) : null}
 
-      <article className="card">
-        <label className="settings-row">
-          <span>Use Web Worker (recommended)</span>
-          <input
-            type="checkbox"
-            checked={settings.useWebWorker}
-            onChange={(event) => onSettingsChange({ ...settings, useWebWorker: event.target.checked })}
-          />
-        </label>
+      {isBridgeProvider ? <BridgePairingPanel settings={settings} onApplyPairing={onApplyPairing} lastSuccessfulBridge={trustedBridgeEndpoints[0] ?? null} /> : null}
 
+      <TTSControls
+        settings={{
+          enabled: settings.ttsEnabled,
+          autoReadReplies: settings.ttsAutoReadReplies,
+          voiceURI: settings.ttsVoiceURI,
+          rate: settings.ttsRate,
+          pitch: settings.ttsPitch,
+          volume: settings.ttsVolume
+        }}
+        voices={tts.voices}
+        state={tts.statusLabel}
+        onChange={(next) =>
+          onSettingsChange({
+            ...settings,
+            ttsEnabled: next.enabled,
+            ttsAutoReadReplies: next.autoReadReplies,
+            ttsVoiceURI: next.voiceURI,
+            ttsRate: next.rate,
+            ttsPitch: next.pitch,
+            ttsVolume: next.volume
+          })
+        }
+        onPause={tts.pause}
+        onResume={tts.resume}
+        onStop={tts.stop}
+      />
+
+      <article className="card">
+        <h3>Capture preferences</h3>
         <label className="settings-row">
-          <span>Use IndexedDB cache for model artifacts</span>
-          <input
-            type="checkbox"
-            checked={settings.useIndexedDbCache}
-            onChange={(event) => onSettingsChange({ ...settings, useIndexedDbCache: event.target.checked })}
-          />
+          <span>Image compression preference</span>
+          <select value={settings.imageCompressionPreference} onChange={(event) => onSettingsChange({ ...settings, imageCompressionPreference: event.target.value as AppSettings['imageCompressionPreference'] })}>
+            <option value="original">Original quality</option>
+            <option value="balanced">Balanced size</option>
+          </select>
         </label>
+        <label className="settings-row">
+          <span>Confirm before bridge image analysis</span>
+          <input type="checkbox" checked={settings.confirmBeforeBridgeImageAnalysis} onChange={(event) => onSettingsChange({ ...settings, confirmBeforeBridgeImageAnalysis: event.target.checked })} />
+        </label>
+        <button className="ghost" onClick={() => void onDescribeImageWithBridge(new Blob(['test'], { type: 'text/plain' })).then((msg) => setVisionStatus(msg)).catch((err) => setVisionStatus(err instanceof Error ? err.message : 'Bridge analysis unavailable'))}>Test bridge image analysis contract</button>
+        {visionStatus ? <p className="helper-text">{visionStatus}</p> : null}
       </article>
 
-      <article className="card privacy-callout">
-        <strong>Privacy notice</strong>
-        <p>
-          Local mode is fully on-device. Bridge mode sends prompts only to the endpoint you configure. PocketBrain does
-          not add hidden telemetry.
-        </p>
+      <SyncPanel trustedDevices={trustedDevices} preferences={syncPreferences} onPreferencesChange={onSyncPreferencesChange} onTrustDevice={onTrustDevice} onRevokeDevice={onRevokeDevice} />
+
+      <article className="card">
+        <h3>Privacy</h3>
+        <p className="helper-text">Local-first defaults are preserved. Bridge and sync are explicit opt-in actions only.</p>
       </article>
 
       <article className="card">
         <h3>Device diagnostics</h3>
         <ul className="diagnostics-list">
-          <li>
-            <strong>GPU vendor</strong>
-            <span>{diagnostics.gpuVendor}</span>
-          </li>
-          <li>
-            <strong>Max storage buffer binding size</strong>
-            <span>{diagnostics.maxStorageBufferBindingSize}</span>
-          </li>
-          <li>
-            <strong>User agent</strong>
-            <span>{diagnostics.userAgent}</span>
-          </li>
+          <li><strong>GPU vendor</strong><span>{diagnostics.gpuVendor}</span></li>
+          <li><strong>Max storage buffer binding size</strong><span>{diagnostics.maxStorageBufferBindingSize}</span></li>
+          <li><strong>User agent</strong><span>{diagnostics.userAgent}</span></li>
         </ul>
       </article>
 
       <BackupPanel onExportData={onExportData} onImportData={onImportData} onClearData={onClearData} />
 
       <article className="card settings-actions">
-        <button className="ghost" onClick={() => void onResetModel()}>
-          Reset model runtime
-        </button>
+        <button className="ghost" onClick={() => void onResetModel()}>Reset model runtime</button>
       </article>
     </section>
   );

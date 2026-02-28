@@ -9,6 +9,7 @@ interface MemoryPageProps {
   voiceNotes: VoiceNote[];
   imageMemories?: string[];
   onDeleteVoiceNote: (id: string) => Promise<void>;
+  onDeleteImageMemory: (id: string) => Promise<void>;
 }
 
 const PINNED_KEY = 'pocketbrain-pinned-memory-ids';
@@ -183,36 +184,21 @@ export const MemoryPage = ({ messages, summary, voiceNotes, imageMemories = [], 
         />
         {query.trim() ? (
           <ul className="memory-list compact">
-            {matches.length ? (
-              matches.map((message) => (
-                <li key={message.id}>
-                  <strong>{message.id.startsWith('voice-') ? 'voice transcript' : message.role}</strong>
-                  <span>{snippet(message.content)}</span>
-                </li>
-              ))
-            ) : (
-              <li>
-                <span className="helper-text">No matches yet.</span>
-              </li>
-            )}
+            {matches.length ? matches.map((message) => <li key={message.id}><strong>{message.id.split('-')[0]}</strong><span>{snippet(message.content)}</span></li>) : <li><span className="helper-text">No matches yet.</span></li>}
           </ul>
-        ) : (
-          <p className="helper-text">Enter a search term to find relevant memory snippets.</p>
-        )}
+        ) : null}
       </article>
 
-      <article className="card">
-        <h3>Voice Notes ({voiceNotes.length})</h3>
-        <ul className="memory-list compact">
-          {voiceNotes.length ? (
-            voiceNotes.map((note) => (
+      {(filter === 'all' || filter === 'voice') ? (
+        <article className="card">
+          <h3>Voice Notes ({voiceNotes.length})</h3>
+          <ul className="memory-list compact">
+            {voiceNotes.map((note) => (
               <li key={note.id}>
                 <strong>{new Date(note.createdAt).toLocaleString()}</strong>
                 <audio controls src={URL.createObjectURL(note.audioBlob)} />
                 <span>{note.transcript ? `Transcript: ${snippet(note.transcript)}` : 'No transcript available.'}</span>
-                <button className="ghost danger" onClick={() => void onDeleteVoiceNote(note.id)}>
-                  Delete
-                </button>
+                <button className="ghost danger" onClick={() => void onDeleteVoiceNote(note.id)}>Delete</button>
               </li>
             ))
           ) : (
