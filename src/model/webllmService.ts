@@ -26,21 +26,23 @@ interface AppConfigModel {
 
 interface WebLlmModule {
   CreateMLCEngine: (
-    modelId: string,
+    modelId: string | string[],
     options?: {
-      appConfig?: unknown;
+      appConfig?: any;
       useIndexedDBCache?: boolean;
       initProgressCallback?: (report: ProgressReport) => void;
-    }
+    },
+    chatOptions?: any,
   ) => Promise<WebLlmEngine>;
   CreateWebWorkerMLCEngine: (
     worker: Worker,
     modelId: string,
     options?: {
-      appConfig?: unknown;
+      appConfig?: any;
       useIndexedDBCache?: boolean;
       initProgressCallback?: (report: ProgressReport) => void;
-    }
+    },
+    chatOptions?: any,
   ) => Promise<WebLlmEngine>;
   prebuiltAppConfig?: { model_list?: AppConfigModel[] };
 }
