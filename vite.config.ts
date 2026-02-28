@@ -9,6 +9,9 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['pwa-icon.svg', 'pwa-maskable.svg'],
+      workbox: {
+        maximumFileSizeToCacheInBytes: 8 * 1024 * 1024
+      },
       manifest: {
         name: 'PocketBrain',
         short_name: 'PocketBrain',
