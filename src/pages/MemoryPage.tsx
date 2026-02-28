@@ -193,7 +193,7 @@ export const MemoryPage = ({ messages, summary, voiceNotes, imageMemories = [], 
         <article className="card">
           <h3>Voice Notes ({voiceNotes.length})</h3>
           <ul className="memory-list compact">
-            {voiceNotes.map((note) => (
+            {voiceNotes.length ? (voiceNotes.map((note) => (
               <li key={note.id}>
                 <strong>{new Date(note.createdAt).toLocaleString()}</strong>
                 <audio controls src={URL.createObjectURL(note.audioBlob)} />
@@ -208,6 +208,7 @@ export const MemoryPage = ({ messages, summary, voiceNotes, imageMemories = [], 
           )}
         </ul>
       </article>
+      ) : null}
     </section>
   );
 };
