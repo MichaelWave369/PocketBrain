@@ -1,0 +1,111 @@
+name: Create GitHub Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag name for the release'
+        required: true
+        default: 'v0.5.0'
+      release_name:
+        description: 'Release name'
+        required: true
+        default: 'PocketBrain v0.5.0 - Your Private AI Brain'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
+          name: ${{ github.event.inputs.release_name || format('PocketBrain {0}', github.ref_name) }}
+          body: |
+            ## 🧠 PocketBrain ${{ github.event.inputs.tag_name || github.ref_name }}
+
+            Your private, phone-first AI brain that runs locally, remembers locally, and stays under your control.
+
+            ### ✨ What's New in v0.5.0
+
+            **Local-First Architecture**
+            - WebLLM runs entirely in your browser
+            - Memory stored in IndexedDB on your device
+            - No server required, no data leaves your device unless you choose bridge mode
+
+            **Voice Notes & Memory**
+            - Capture audio locally with your device microphone
+            - Browser speech recognition for transcription
+            - All voice notes stay on your device
+
+            **Memory Intelligence**
+            - Pinned summaries + recency-based retrieval
+            - Context-aware responses based on your history
+            - Memory timeline to see what your brain knows
+
+            **Optional Bridge Mode**
+            - Connect to Ollama for local stronger models
+            - Use OpenAI or other compatible endpoints
+            - Only compiled prompts sent (not raw memory)
+            - Full fallback to local mode if bridge is unavailable
+
+            **Encrypted Backup/Restore**
+            - Export your memories with password protection
+            - PBKDF2 + AES-GCM encryption
+            - Import to another device or restore from backup
+
+            **Trusted Device Foundation**
+            - Pairing workflow for future device sync
+            - Explicit known-host management
+            - Privacy-respecting multi-device support
+
+            ### 🚀 Quick Start
+
+            **Web** (no installation needed):
+            👉 [Launch PocketBrain](https://michaelwave369.github.io/PocketBrain)
+
+            **Mobile** (add to home screen):
+            1. Open the link on your phone
+            2. Tap the share/menu button
+            3. Select "Add to Home Screen"
+            4. Tap "Get started" in the app
+
+            **Self-Hosted**:
+            ```bash
+            git clone https://github.com/MichaelWave369/PocketBrain.git
+            cd PocketBrain
+            npm ci
+            npm run dev
+            ```
+
+            ### 📋 Current Limitations
+
+            - Large WebLLM bundles can be heavy on low-end phones (initial load)
+            - Full camera/image memory workflow not yet complete in UI
+            - Multi-device sync foundation present but sync feature not yet available
+            - TTS playback not integrated into default UX
+
+            ### 🔒 Privacy
+
+            No hidden telemetry. Bridge mode only sends data to endpoints you explicitly configure. Full source code available for audit.
+
+            ### 📚 Learn More
+
+            - [README](./README.md) - Full technical documentation
+            - [GitHub](https://github.com/MichaelWave369/PocketBrain) - Source code
+            - License: Apache-2.0
+
+            ---
+
+            Built with ❤️ for privacy, sovereignty, and local-first AI.
+          draft: false
+          prerelease: false
