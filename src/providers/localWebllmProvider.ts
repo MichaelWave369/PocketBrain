@@ -71,6 +71,10 @@ export class LocalWebLlmProvider implements ChatProvider {
     return getCuratedModelList();
   }
 
+  async describeImage(): Promise<string> {
+    throw new Error('Local WebLLM image description is not available in this release. Use a bridge provider to describe images.');
+  }
+
   getEngine(): WebLlmEngine | null {
     return this.engine;
   }

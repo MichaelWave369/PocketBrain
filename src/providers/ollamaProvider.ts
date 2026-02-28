@@ -104,4 +104,8 @@ export class OllamaProvider implements ChatProvider {
   async transcribeAudio(): Promise<string> {
     throw new Error('Ollama transcription bridge is not implemented yet.');
   }
+
+  async describeImage(): Promise<string> {
+    throw new Error('Ollama image description bridge is not implemented yet.');
+  }
 }

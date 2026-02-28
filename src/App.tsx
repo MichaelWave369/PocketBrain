@@ -31,6 +31,14 @@ import type { ProviderGenerateRequest } from './providers/types';
 import type { AppSettings, ChatMessage, DeviceDiagnostics, MemorySummary, ModelStatus } from './types';
 import type { VoiceNote } from './voice/types';
 
+
+interface ImageMemory {
+  id: string;
+  caption?: string;
+  notes?: string;
+  analysisSummary?: string;
+}
+
 const DEFAULT_SETTINGS: AppSettings = {
   localOnlyMode: true,
   selectedModel: 'Llama-3.2-1B-Instruct-q4f16_1-MLC',
@@ -53,6 +61,7 @@ const DEFAULT_DIAGNOSTICS: DeviceDiagnostics = {
 export const App = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [voiceNotes, setVoiceNotes] = useState<VoiceNote[]>([]);
+  const [imageMemories] = useState<ImageMemory[]>([]);
   const [summary, setSummary] = useState<MemorySummary | null>(null);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [trustedBridgeEndpoints, setTrustedBridgeEndpoints] = useState<string[]>([]);
@@ -328,6 +337,10 @@ export const App = () => {
   };
 
   const transcriptMemories = voiceNotes.map((note) => note.transcript).filter((text): text is string => Boolean(text));
+  const imageMemoryTexts = imageMemories
+    .flatMap((memory) => [memory.analysisSummary, memory.caption, memory.notes])
+    .map((text) => text?.trim() ?? '')
+    .filter((text): text is string => Boolean(text));
 
   return (
     <Routes>
@@ -340,6 +353,7 @@ export const App = () => {
               summary={summary}
               voiceNotes={voiceNotes}
               transcriptMemories={transcriptMemories}
+              imageMemoryTexts={imageMemoryTexts}
               modelStatus={modelStatus}
               modelError={modelError}
               modelProgressText={modelProgressText}
@@ -356,7 +370,10 @@ export const App = () => {
             />
           }
         />
-        <Route path="/memory" element={<MemoryPage messages={messages} summary={summary} voiceNotes={voiceNotes} onDeleteVoiceNote={onDeleteVoiceNote} />} />
+        <Route
+          path="/memory"
+          element={<MemoryPage messages={messages} summary={summary} voiceNotes={voiceNotes} imageMemories={imageMemoryTexts} onDeleteVoiceNote={onDeleteVoiceNote} />}
+        />
         <Route
           path="/settings"
           element={

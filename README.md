@@ -1,82 +1,84 @@
 # PocketBrain v0.4.0
 
-PocketBrain is a phone-first PWA for private memory-first AI chat.
+PocketBrain is a **private, phone-first, local-first AI brain**.
 
-## Small phone, big brain
-PocketBrain keeps memory and retrieval local on your phone, and can optionally route final prompts to a trusted LAN bridge model.
+It prioritizes on-device memory and retrieval, with optional user-controlled bridge mode when you want a stronger remote model.
 
-## What’s new in v0.4.0
-- Voice input with recording states, cancel/retry, elapsed timer, and graceful fallback when browser transcription is unavailable.
-- Pairing-first bridge discovery (manual entry, trusted recents, pairing payload/file import/export, explicit known-host probe).
-- Encrypted backup and restore (Web Crypto AES-GCM + PBKDF2) with merge/replace import modes.
-- Voice notes stored locally, playable in Memory page, searchable only when transcript exists.
+## Core product behavior
+- **Local-first by default**: WebLLM runs in-browser, memory stays in IndexedDB.
+- **Private memory loop**: pinned summary + recency + retrieval over local messages.
+- **Optional bridge mode**: send compiled prompts only to endpoints you configure.
+- **Voice notes**: capture audio locally; use browser speech recognition when available.
+- **Trusted-device sync foundation**: pairing payloads + trusted bridge endpoint history.
+- **Encrypted backup/restore**: PBKDF2 + AES-GCM in browser.
+- **PWA + GitHub Pages** deployment support.
 
 ## Modes
-### Local mode (default)
-- WebLLM in browser
-- Local IndexedDB memory and retrieval
-- No remote prompt transfer
+### 1) Local WebLLM mode (default)
+- Provider: `local-webllm`
+- No bridge endpoint needed
+- Memory/retrieval stay on device
 
-### Bridge mode (optional)
-- Ollama bridge on LAN
-- OpenAI-compatible bridge endpoint
-- Memory and retrieval stay local; only compiled prompt is sent to endpoint configured by user
+### 2) Bridge mode (optional)
+- Providers: `ollama-bridge`, `openai-compatible-bridge`
+- Endpoint, model, and key are user-configured
+- Retrieval remains local; only final prompt is sent to the bridge
+- Fallback-to-local is supported when bridge init fails
 
-## Setup
+## Voice notes and transcription
+- Microphone capture always stores voice note locally.
+- If browser speech recognition exists, transcript is inserted into draft.
+- If not available, note is still saved and shown as non-transcribed.
+- Bridge transcription is explicit/manual and provider-dependent.
+
+## TTS
+- The app currently focuses on text responses and voice input.
+- Browser/provider TTS playback is not yet fully integrated into the default UX.
+
+## Image capture and image memory indexing
+- Image-memory retrieval hooks are now present in retrieval/search contracts.
+- Full camera capture + persistent image memory UX is still in-progress.
+
+## Trusted devices / sync foundation
+- Pairing-first bridge workflow includes:
+  - trusted endpoint history
+  - pairing payload/file import/export
+  - explicit known-host probe (no blind subnet scans)
+- This is a foundation for future trusted-device sync experiences.
+
+## Encrypted backup and restore
+- Export plain or encrypted backup packages.
+- Encrypted packages use browser Web Crypto (`PBKDF2` + `AES-GCM`).
+- Import supports merge/replace mode.
+- Wrong passphrase fails safely.
+
+## Local setup
 ```bash
 npm ci
 npm run dev
 ```
 
-Build and checks:
+## Verification / release checks
 ```bash
 npm run lint
 npm run build
+npm run verify
 ```
 
-## GitHub Actions lockfile fix (kept)
-- Root `package-lock.json` is committed.
-- Workflow uses `npm ci`.
-- setup-node cache points at `cache-dependency-path: package-lock.json`.
-
-## Pairing-first LAN discovery
-- Manual bridge endpoint entry
-- Reconnect recent successful endpoint
-- Pairing file import/export (JSON)
-- QR payload copy/paste path
-- Explicit known-host probe only after user action (no blind subnet scan)
-
-## Voice input notes
-- Browser asks for microphone permission.
-- On supported browsers, speech recognition can insert transcript to draft.
-- On unsupported browsers, voice note is still saved locally and clearly marked as non-transcribed.
-- Bridge transcription is explicit/manual and currently stubbed by provider contract.
-
-## Local network permission notes
-Some browsers gate LAN calls behind local-network permission. If denied, bridge probes fail with clear errors.
-
-## Encrypted backups
-- Plain `.pocketbrain.json` export
-- Encrypted `.pocketbrain.enc.json` export
-- Encrypted export requires passphrase + confirmation
-- Wrong passphrase on import fails safely
-- Losing passphrase means encrypted backup cannot be recovered
+`npm run verify` is a lightweight CI-safe integration check that catches contract drift between retrieval/provider interfaces.
 
 ## GitHub Pages deployment
 1. Push to `main`
 2. Enable Pages source = GitHub Actions
-3. Workflow builds and deploys `dist`
+3. Actions build and deploy `dist`
 
-## Troubleshooting
-- **Microphone denied**: re-enable mic permission in browser site settings.
-- **Speech recognition unavailable**: browser does not expose speech API; voice note is saved without transcript.
-- **Bridge discovery blocked**: local-network permission or firewall blocked access.
-- **CORS failure to LAN bridge**: configure bridge/proxy CORS headers.
-- **Encrypted backup wrong passphrase**: import fails safely; retry with correct passphrase.
-- **Actions lockfile issue**: keep root `package-lock.json`, use `npm ci`, and `cache-dependency-path: package-lock.json`.
+## Current limitations
+- Large WebLLM bundles produce large PWA assets; initial load can be heavy on low-end phones.
+- Bridge transcription and bridge image-description support depend on endpoint model capability and API compatibility.
+- Full camera-to-memory workflow is not yet complete in the UI.
 
 ## Privacy
-No hidden telemetry. Bridge mode sends prompts only to the endpoint you explicitly configure.
+No hidden telemetry. Bridge mode sends prompts only to endpoints you explicitly configure.
 
 ## License
 Apache-2.0
