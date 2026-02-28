@@ -1,4 +1,4 @@
-import type { ProgressReport, WebLlmEngine } from '../model/webllmService';
+import type { ProgressReport } from '../model/webllmService';
 
 export type ProviderType = 'local-webllm' | 'ollama-bridge' | 'openai-compatible-bridge';
 
@@ -36,9 +36,4 @@ export interface ProviderGenerateRequest {
   systemPrompt: string;
   context: string;
   userInput: string;
-}
-
-export interface ProviderRegistryResult {
-  provider: ChatProvider;
-  localEngine: WebLlmEngine | null;
 }

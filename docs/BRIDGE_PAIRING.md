@@ -1,44 +1,23 @@
-# Bridge Pairing Contract
+# Bridge Pairing
 
-PocketBrain can pair with a trusted LAN bridge instead of scanning entire subnets.
+Bridge pairing connects PocketBrain to a trusted inference endpoint (e.g., Ollama on LAN).
 
 ## Why pairing-first
-- More private than blind network scans
-- More reliable across browser security constraints
-- Clear user intent and trusted endpoint list
+Browsers cannot reliably/safely perform blind subnet scans. Pairing is explicit, auditable, and privacy-friendly.
 
-## Browser constraints
-- Browsers may require local-network permission for LAN hosts
-- CORS must allow browser-origin requests
-- Firewalls/router isolation can block phone-to-PC traffic
+## Typical endpoints
+- `http://192.168.x.x:11434` (Ollama)
+- `http://192.168.x.x:8000/v1` (OpenAI-compatible)
 
-## Pairing payload format
-```json
-{
-  "version": 1,
-  "providerType": "ollama-bridge",
-  "baseUrl": "http://192.168.1.20:11434",
-  "modelName": "llama3.2:3b",
-  "apiPath": "/api/generate",
-  "displayName": "Desk GPU",
-  "createdAt": "2026-01-01T00:00:00.000Z"
-}
-```
+## Companion contract (future helper)
+Potential helper endpoints:
+- `/health`
+- `/models`
+- `/pairing`
+- `/transcribe` (future)
+- `/v1/chat/completions` or Ollama-compatible routes
 
-## Optional desktop helper contract (future)
-A tiny desktop companion may expose:
-- `GET /health`
-- `GET /models`
-- `GET /pairing`
-- `POST /transcribe` (optional future)
-- `POST /v1/chat/completions` or Ollama-compatible route
-
-## Security warnings
-- Do not expose bridge endpoints publicly without authentication.
-- Prefer LAN-only binding and firewall restrictions.
-- API keys/tokens should be user-managed and revocable.
-
-## Example endpoints
-- Ollama: `http://192.168.x.x:11434`
-- OpenAI-compatible: `http://192.168.x.x:8000/v1`
-- Local DNS alias: `http://pocketbrain.local:11434`
+## Security notes
+- Do not expose a bridge publicly without authentication.
+- Configure CORS for your trusted local origins.
+- Local-network browser permission may be required on some platforms.

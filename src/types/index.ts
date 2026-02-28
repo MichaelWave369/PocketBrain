@@ -27,6 +27,14 @@ export interface AppSettings {
   bridgeApiKey: string;
   rememberBridgeSettings: boolean;
   bridgeFallbackToLocal: boolean;
+  ttsEnabled: boolean;
+  ttsAutoReadReplies: boolean;
+  ttsVoiceURI: string;
+  ttsRate: number;
+  ttsPitch: number;
+  ttsVolume: number;
+  confirmBeforeBridgeImageAnalysis: boolean;
+  imageCompressionPreference: 'original' | 'balanced';
 }
 
 export type ModelStatus = 'idle' | 'loading' | 'ready' | 'generating' | 'error';

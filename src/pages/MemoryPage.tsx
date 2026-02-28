@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
+import { ImageMemoryCard } from '../components/ImageMemoryCard';
 import { searchMessages } from '../retrieval/retriever';
+import type { ImageMemory } from '../camera/types';
 import type { ChatMessage, MemorySummary } from '../types';
 import type { VoiceNote } from '../voice/types';
 
@@ -9,12 +11,14 @@ interface MemoryPageProps {
   voiceNotes: VoiceNote[];
   imageMemories?: string[];
   onDeleteVoiceNote: (id: string) => Promise<void>;
+  onDeleteImageMemory: (id: string) => Promise<void>;
 }
 
 const snippet = (text: string, max = 140) => (text.length <= max ? text : `${text.slice(0, max)}...`);
 
 export const MemoryPage = ({ messages, summary, voiceNotes, imageMemories = [], onDeleteVoiceNote }: MemoryPageProps) => {
   const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState<'all' | 'chat' | 'summary' | 'voice' | 'image'>('all');
 
   const transcriptMemories = voiceNotes.map((note) => note.transcript).filter((text): text is string => Boolean(text));
 
@@ -26,7 +30,7 @@ export const MemoryPage = ({ messages, summary, voiceNotes, imageMemories = [], 
   return (
     <section className="panel">
       <h2>Memory</h2>
-      <p className="helper-text">Super-brain retrieval uses pinned summary + transcript-aware relevance + recency.</p>
+      <p className="helper-text">Mixed timeline: chats, summaries, voice notes, image memories.</p>
 
       <article className="card">
         <h3>Pinned Summary</h3>
@@ -43,57 +47,54 @@ export const MemoryPage = ({ messages, summary, voiceNotes, imageMemories = [], 
         />
         {query.trim() ? (
           <ul className="memory-list compact">
-            {matches.length ? (
-              matches.map((message) => (
-                <li key={message.id}>
-                  <strong>{message.id.startsWith('voice-') ? 'voice transcript' : message.role}</strong>
-                  <span>{snippet(message.content)}</span>
-                </li>
-              ))
-            ) : (
-              <li>
-                <span className="helper-text">No matches yet.</span>
-              </li>
-            )}
+            {matches.length ? matches.map((message) => <li key={message.id}><strong>{message.id.split('-')[0]}</strong><span>{snippet(message.content)}</span></li>) : <li><span className="helper-text">No matches yet.</span></li>}
           </ul>
-        ) : (
-          <p className="helper-text">Enter a search term to find relevant memory snippets.</p>
-        )}
+        ) : null}
       </article>
 
-      <article className="card">
-        <h3>Voice Notes ({voiceNotes.length})</h3>
-        <ul className="memory-list compact">
-          {voiceNotes.length ? (
-            voiceNotes.map((note) => (
+      {(filter === 'all' || filter === 'voice') ? (
+        <article className="card">
+          <h3>Voice Notes ({voiceNotes.length})</h3>
+          <ul className="memory-list compact">
+            {voiceNotes.map((note) => (
               <li key={note.id}>
                 <strong>{new Date(note.createdAt).toLocaleString()}</strong>
                 <audio controls src={URL.createObjectURL(note.audioBlob)} />
                 <span>{note.transcript ? `Transcript: ${snippet(note.transcript)}` : 'No transcript available.'}</span>
-                <button className="ghost danger" onClick={() => void onDeleteVoiceNote(note.id)}>
-                  Delete
-                </button>
+                <button className="ghost danger" onClick={() => void onDeleteVoiceNote(note.id)}>Delete</button>
               </li>
-            ))
-          ) : (
-            <li>
-              <span className="helper-text">No voice notes stored yet.</span>
-            </li>
-          )}
-        </ul>
-      </article>
+            ))}
+          </ul>
+        </article>
+      ) : null}
 
-      <article className="card">
-        <h3>Recent Turns ({messages.length})</h3>
-        <ul className="memory-list">
-          {messages.slice(-20).map((message) => (
-            <li key={message.id}>
-              <strong>{message.role}</strong>
-              <span>{message.content}</span>
-            </li>
-          ))}
-        </ul>
-      </article>
+      {(filter === 'all' || filter === 'image') ? (
+        <article className="card">
+          <h3>Image Memories ({imageMemories.length})</h3>
+          <div className="image-grid">
+            {imageMemories.map((image) => (
+              <ImageMemoryCard
+                key={image.id}
+                image={image}
+                onUpdate={async () => {}}
+                onDelete={onDeleteImageMemory}
+                onAttachToChat={() => {}}
+              />
+            ))}
+          </div>
+        </article>
+      ) : null}
+
+      {(filter === 'all' || filter === 'chat') ? (
+        <article className="card">
+          <h3>Recent Turns ({messages.length})</h3>
+          <ul className="memory-list">
+            {messages.slice(-20).map((message) => (
+              <li key={message.id}><strong>{message.role}</strong><span>{message.content}</span></li>
+            ))}
+          </ul>
+        </article>
+      ) : null}
     </section>
   );
 };

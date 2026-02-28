@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom';
 
 const links = [
   { to: '/', label: 'Chat' },
+  { to: '/capture', label: 'Capture' },
   { to: '/memory', label: 'Memory' },
   { to: '/settings', label: 'Settings' }
 ];
