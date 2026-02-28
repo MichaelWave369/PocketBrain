@@ -7,24 +7,21 @@ interface MemoryPageProps {
   messages: ChatMessage[];
   summary: MemorySummary | null;
   voiceNotes: VoiceNote[];
+  imageMemories?: string[];
   onDeleteVoiceNote: (id: string) => Promise<void>;
 }
 
 const snippet = (text: string, max = 140) => (text.length <= max ? text : `${text.slice(0, max)}...`);
 
-export const MemoryPage = ({ messages, summary, voiceNotes, onDeleteVoiceNote }: MemoryPageProps) => {
+export const MemoryPage = ({ messages, summary, voiceNotes, imageMemories = [], onDeleteVoiceNote }: MemoryPageProps) => {
   const [query, setQuery] = useState('');
 
-  const transcriptMessages = voiceNotes
-    .filter((note) => note.transcript)
-    .map((note) => ({
-      id: `voice-${note.id}`,
-      role: 'assistant' as const,
-      content: note.transcript ?? '',
-      createdAt: note.createdAt
-    }));
+  const transcriptMemories = voiceNotes.map((note) => note.transcript).filter((text): text is string => Boolean(text));
 
-  const matches = useMemo(() => searchMessages([...messages, ...transcriptMessages], query), [messages, transcriptMessages, query]);
+  const matches = useMemo(
+    () => searchMessages(messages, query, { transcriptMemories, imageMemories }),
+    [messages, query, transcriptMemories, imageMemories]
+  );
 
   return (
     <section className="panel">
@@ -40,7 +37,7 @@ export const MemoryPage = ({ messages, summary, voiceNotes, onDeleteVoiceNote }:
         <h3>Search Memory</h3>
         <input
           className="search-input"
-          placeholder="Search past messages and transcripts"
+          placeholder="Search messages, transcripts, and image memories"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />

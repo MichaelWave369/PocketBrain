@@ -328,6 +328,7 @@ export const App = () => {
   };
 
   const transcriptMemories = voiceNotes.map((note) => note.transcript).filter((text): text is string => Boolean(text));
+  const imageMemories: string[] = [];
 
   return (
     <Routes>
@@ -356,7 +357,10 @@ export const App = () => {
             />
           }
         />
-        <Route path="/memory" element={<MemoryPage messages={messages} summary={summary} voiceNotes={voiceNotes} onDeleteVoiceNote={onDeleteVoiceNote} />} />
+        <Route
+          path="/memory"
+          element={<MemoryPage messages={messages} summary={summary} voiceNotes={voiceNotes} imageMemories={imageMemories} onDeleteVoiceNote={onDeleteVoiceNote} />}
+        />
         <Route
           path="/settings"
           element={

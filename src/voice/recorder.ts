@@ -3,7 +3,8 @@ export interface RecordingSession {
   cancel: () => void;
 }
 
-export const canRecordAudio = () => Boolean(navigator.mediaDevices?.getUserMedia && window.MediaRecorder);
+export const canRecordAudio = () =>
+  Boolean(navigator.mediaDevices && typeof MediaRecorder !== 'undefined');
 
 export const startRecording = async (): Promise<RecordingSession> => {
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true });

@@ -34,6 +34,24 @@ const CONTEXT_BUDGET = 2600;
 const BM25_K1 = 1.5;
 const BM25_B = 0.75;
 
+export interface RetrievalOptions {
+  userInput: string;
+  draftInput?: string;
+  transcriptMemories?: string[];
+  imageMemories?: string[];
+}
+
+const toMemoryMessages = (items: string[] | undefined, prefix: 'voice' | 'image'): ChatMessage[] =>
+  (items ?? [])
+    .map((text) => text.trim())
+    .filter(Boolean)
+    .map((text, index) => ({
+      id: `${prefix}-${index}`,
+      role: 'assistant' as const,
+      content: prefix === 'image' ? `Image memory: ${text}` : text,
+      createdAt: 0
+    }));
+
 export const tokenizeText = (text: string): string[] =>
   text
     .toLowerCase()
@@ -91,18 +109,15 @@ const formatMessage = (message: ChatMessage): string => `${message.role}: ${mess
 export const retrieveContext = (
   messages: ChatMessage[],
   summary: MemorySummary | null,
-  userInput: string,
-  transcriptMemories: string[] = []
+  options: RetrievalOptions
 ): string => {
-  const queryTokens = tokenizeText(userInput);
-  const transcriptMessages: ChatMessage[] = transcriptMemories.map((text, index) => ({
-    id: `voice-${index}`,
-    role: "assistant",
-    content: text,
-    createdAt: 0
-  }));
+  const querySeed = [options.userInput, options.draftInput].filter(Boolean).join(' ');
+  const queryTokens = tokenizeText(querySeed);
 
-  const allMessages = [...messages, ...transcriptMessages];
+  const transcriptMessages = toMemoryMessages(options.transcriptMemories, 'voice');
+  const imageMessages = toMemoryMessages(options.imageMemories, 'image');
+
+  const allMessages = [...messages, ...transcriptMessages, ...imageMessages];
   const docs = allMessages.map((message) => tokenizeText(message.content));
   const scores = scoreBm25(queryTokens, docs);
 
@@ -114,7 +129,6 @@ export const retrieveContext = (
     .map((item) => item.message);
 
   const recent = messages.slice(-RECENT_TURNS);
-
   const uniqueRelevant = relevant.filter((candidate) => !recent.some((item) => item.id === candidate.id));
 
   const sections: string[] = [];
@@ -134,13 +148,23 @@ export const retrieveContext = (
   return truncateToBudget(sections.filter(Boolean));
 };
 
-export const searchMessages = (messages: ChatMessage[], query: string): ChatMessage[] => {
+export const searchMessages = (
+  messages: ChatMessage[],
+  query: string,
+  options?: { transcriptMemories?: string[]; imageMemories?: string[] }
+): ChatMessage[] => {
   const queryTokens = tokenizeText(query);
   if (!queryTokens.length) {
     return [];
   }
 
-  const scored = messages
+  const allMessages = [
+    ...messages,
+    ...toMemoryMessages(options?.transcriptMemories, 'voice'),
+    ...toMemoryMessages(options?.imageMemories, 'image')
+  ];
+
+  return allMessages
     .map((message) => {
       const tokens = tokenizeText(message.content);
       const overlap = queryTokens.filter((token) => tokens.includes(token)).length;
@@ -150,6 +174,4 @@ export const searchMessages = (messages: ChatMessage[], query: string): ChatMess
     .sort((a, b) => b.overlap - a.overlap || b.message.createdAt - a.message.createdAt)
     .slice(0, 12)
     .map((entry) => entry.message);
-
-  return scored;
 };
