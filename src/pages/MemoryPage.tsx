@@ -192,24 +192,18 @@ export const MemoryPage = ({ messages, summary, voiceNotes, imageMemories = [], 
       <article className="card">
           <h3>Voice Notes ({voiceNotes.length})</h3>
           <ul className="memory-list compact">
-            {voiceNotes.length ? (voiceNotes.map((note) => (
+            {voiceNotes.length ? voiceNotes.map((note) => (
               <li key={note.id}>
                 <strong>{new Date(note.createdAt).toLocaleString()}</strong>
                 <audio controls src={URL.createObjectURL(note.audioBlob)} />
                 <span>{note.transcript ? `Transcript: ${snippet(note.transcript)}` : 'No transcript available.'}</span>
                 <button className="ghost danger" onClick={() => void onDeleteVoiceNote(note.id)}>Delete</button>
               </li>
-            ))
-          ) : (
-            <li>
-              <span className="helper-text">No voice notes stored yet.</span>
-            </li>
-          ))
-        ) : (
-          <li>
-            <span className="helper-text">No voice notes stored yet.</span>
-          </li>
-        )}
+            )) : (
+              <li>
+                <span className="helper-text">No voice notes stored yet.</span>
+              </li>
+            )}
         </ul>
       </article>
     </section>

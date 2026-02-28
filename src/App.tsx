@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { AppLayout } from './layouts/AppLayout';
 import { fromImageMemoryData, fromVoiceNoteData, toImageMemoryData, toVoiceNoteData, type BackupData, type ImportMode } from './backup/types';
 import { getCuratedModelList, getDeviceDiagnostics, resetModelEngine, type ProgressReport } from './model/webllmService';
@@ -11,6 +11,7 @@ import {
   clearSummaries,
   clearVoiceNotes,
   deleteTrustedDevice,
+  deleteImageMemory,
   deleteVoiceNote,
   getImageMemories,
   getMessages,
@@ -74,6 +75,7 @@ const DEFAULT_DIAGNOSTICS: DeviceDiagnostics = {
 };
 
 export const App = () => {
+  const navigate = useNavigate();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [voiceNotes, setVoiceNotes] = useState<VoiceNote[]>([]);
   const [imageMemories, setImageMemories] = useState<ImageMemory[]>([]);
@@ -206,6 +208,25 @@ export const App = () => {
   const onDeleteVoiceNote = async (id: string) => {
     await deleteVoiceNote(id);
     setVoiceNotes((prev) => prev.filter((note) => note.id !== id));
+  };
+
+  const onSaveImage = async (image: ImageMemory) => {
+    await saveImageMemory(image);
+    setImageMemories((prev) => [image, ...prev]);
+  };
+
+  const onUpdateImage = async (image: ImageMemory) => {
+    await saveImageMemory(image);
+    setImageMemories((prev) => prev.map((m) => (m.id === image.id ? image : m)));
+  };
+
+  const onDeleteImage = async (id: string) => {
+    await deleteImageMemory(id);
+    setImageMemories((prev) => prev.filter((m) => m.id !== id));
+  };
+
+  const onAttachImageToChat = (id: string) => {
+    navigate('/?imageId=' + id);
   };
 
   const onSettingsChange = async (next: AppSettings) => {
