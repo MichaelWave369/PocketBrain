@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent } from 'react';
+import { useState } from 'react';
 import { BridgePairingPanel } from '../components/BridgePairingPanel';
 import { BackupPanel } from '../components/BackupPanel';
 import type { BackupData, ImportMode } from '../backup/types';
