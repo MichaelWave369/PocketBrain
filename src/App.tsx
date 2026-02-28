@@ -41,22 +41,6 @@ import type { AppSettings, ChatMessage, DeviceDiagnostics, MemorySummary, ModelS
 import type { VoiceNote } from './voice/types';
 import type { ImageMemory } from './camera/types';
 
-
-interface ImageMemory {
-  id: string;
-  caption?: string;
-  notes?: string;
-  analysisSummary?: string;
-}
-
-
-interface ImageMemory {
-  id: string;
-  caption?: string;
-  notes?: string;
-  analysisSummary?: string;
-}
-
 const DEFAULT_SETTINGS: AppSettings = {
   localOnlyMode: true,
   selectedModel: 'Llama-3.2-1B-Instruct-q4f16_1-MLC',
@@ -92,7 +76,7 @@ const DEFAULT_DIAGNOSTICS: DeviceDiagnostics = {
 export const App = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [voiceNotes, setVoiceNotes] = useState<VoiceNote[]>([]);
-  const [imageMemories] = useState<ImageMemory[]>([]);
+  const [imageMemories, setImageMemories] = useState<ImageMemory[]>([]);
   const [summary, setSummary] = useState<MemorySummary | null>(null);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [trustedBridgeEndpoints, setTrustedBridgeEndpoints] = useState<string[]>([]);

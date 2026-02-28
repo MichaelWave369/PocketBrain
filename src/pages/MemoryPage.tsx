@@ -9,7 +9,7 @@ interface MemoryPageProps {
   voiceNotes: VoiceNote[];
   imageMemories?: string[];
   onDeleteVoiceNote: (id: string) => Promise<void>;
-  onDeleteImageMemory: (id: string) => Promise<void>;
+  onDeleteImageMemory?: (id: string) => Promise<void>;
 }
 
 const PINNED_KEY = 'pocketbrain-pinned-memory-ids';
@@ -189,8 +189,7 @@ export const MemoryPage = ({ messages, summary, voiceNotes, imageMemories = [], 
         ) : null}
       </article>
 
-      {(filter === 'all' || filter === 'voice') ? (
-        <article className="card">
+      <article className="card">
           <h3>Voice Notes ({voiceNotes.length})</h3>
           <ul className="memory-list compact">
             {voiceNotes.length ? (voiceNotes.map((note) => (
@@ -208,7 +207,6 @@ export const MemoryPage = ({ messages, summary, voiceNotes, imageMemories = [], 
           )}
         </ul>
       </article>
-      ) : null}
     </section>
   );
 };
