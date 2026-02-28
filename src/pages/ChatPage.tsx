@@ -43,7 +43,6 @@ export const ChatPage = ({
   messages,
   summary,
   voiceNotes,
-  imageMemories,
   transcriptMemories,
   imageMemoryTexts = [],
   modelStatus,
@@ -137,10 +136,6 @@ export const ChatPage = ({
     setIsStreaming(true);
 
     try {
-      const imageTexts = imageMemories
-        .map((image) => [image.caption, image.notes, image.ocrText, image.analysisSummary].filter(Boolean).join(' ').trim())
-        .filter(Boolean);
-
       const request: ProviderGenerateRequest = {
         systemPrompt: SYSTEM_PROMPT,
         context: retrieveContext(messages, summary, content, [...transcriptMemories, ...imageTexts]),

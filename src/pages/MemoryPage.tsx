@@ -204,7 +204,12 @@ export const MemoryPage = ({ messages, summary, voiceNotes, imageMemories = [], 
             <li>
               <span className="helper-text">No voice notes stored yet.</span>
             </li>
-          )}
+          ))
+        ) : (
+          <li>
+            <span className="helper-text">No voice notes stored yet.</span>
+          </li>
+        )}
         </ul>
       </article>
     </section>

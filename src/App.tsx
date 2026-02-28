@@ -10,7 +10,6 @@ import {
   clearMessages,
   clearSummaries,
   clearVoiceNotes,
-  deleteImageMemory,
   deleteTrustedDevice,
   deleteVoiceNote,
   getImageMemories,
@@ -207,35 +206,6 @@ export const App = () => {
   const onDeleteVoiceNote = async (id: string) => {
     await deleteVoiceNote(id);
     setVoiceNotes((prev) => prev.filter((note) => note.id !== id));
-  };
-
-  const onSaveImage = async (image: ImageMemory) => {
-    await saveImageMemory(image);
-    setImageMemories((prev) => [image, ...prev]);
-  };
-
-  const onUpdateImage = async (image: ImageMemory) => {
-    await saveImageMemory(image);
-    setImageMemories((prev) => prev.map((entry) => (entry.id === image.id ? image : entry)));
-  };
-
-  const onDeleteImage = async (id: string) => {
-    await deleteImageMemory(id);
-    setImageMemories((prev) => prev.filter((image) => image.id !== id));
-  };
-
-  const onAttachImageToChat = (id: string) => {
-    const image = imageMemories.find((entry) => entry.id === id);
-    if (!image) return;
-    const note = image.caption || image.notes || image.analysisSummary || 'image memory';
-    const userMessage: ChatMessage = {
-      id: `img-${id}-${Date.now()}`,
-      role: 'user',
-      content: `[Attached image memory] ${note}`,
-      createdAt: Date.now()
-    };
-    setMessages((prev) => [...prev, userMessage]);
-    void saveMessage(userMessage);
   };
 
   const onSettingsChange = async (next: AppSettings) => {
