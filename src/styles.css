@@ -396,3 +396,16 @@ hr {
   border-top: 1px solid #1e293b;
   margin: 0.9rem 0;
 }
+
+
+.first-run-panel {
+  min-height: calc(100dvh - 120px);
+  display: grid;
+  gap: 0.8rem;
+}
+
+.context-preview p {
+  white-space: pre-wrap;
+  max-height: 120px;
+  overflow: auto;
+}

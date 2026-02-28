@@ -1,7 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ImageMemoryCard } from '../components/ImageMemoryCard';
-import { searchMessages } from '../retrieval/retriever';
-import type { ImageMemory } from '../camera/types';
+import { searchMessages, tokenizeText } from '../retrieval/retriever';
 import type { ChatMessage, MemorySummary } from '../types';
 import type { VoiceNote } from '../voice/types';
 
@@ -14,11 +12,24 @@ interface MemoryPageProps {
   onDeleteImageMemory: (id: string) => Promise<void>;
 }
 
+const PINNED_KEY = 'pocketbrain-pinned-memory-ids';
+
 const snippet = (text: string, max = 140) => (text.length <= max ? text : `${text.slice(0, max)}...`);
+
+const getDayMs = () => 24 * 60 * 60 * 1000;
+
+const estimateTokens = (text: string) => Math.ceil(text.trim().split(/\s+/).filter(Boolean).length * 1.3);
 
 export const MemoryPage = ({ messages, summary, voiceNotes, imageMemories = [], onDeleteVoiceNote }: MemoryPageProps) => {
   const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState<'all' | 'chat' | 'summary' | 'voice' | 'image'>('all');
+  const [pinnedIds, setPinnedIds] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem(PINNED_KEY);
+      return new Set<string>(raw ? (JSON.parse(raw) as string[]) : []);
+    } catch {
+      return new Set<string>();
+    }
+  });
 
   const transcriptMemories = voiceNotes.map((note) => note.transcript).filter((text): text is string => Boolean(text));
 
@@ -27,14 +38,140 @@ export const MemoryPage = ({ messages, summary, voiceNotes, imageMemories = [], 
     [messages, query, transcriptMemories, imageMemories]
   );
 
+  const togglePinned = (id: string) => {
+    const next = new Set(pinnedIds);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    setPinnedIds(next);
+    localStorage.setItem(PINNED_KEY, JSON.stringify([...next]));
+  };
+
+  const sevenDaysAgo = Date.now() - 7 * getDayMs();
+  const timelineMessages = messages.filter((message) => message.createdAt >= sevenDaysAgo).slice(-30).reverse();
+  const timelineVoice = voiceNotes.filter((note) => note.createdAt >= sevenDaysAgo);
+
+  const totalTokenEstimate = useMemo(
+    () => messages.reduce((sum, message) => sum + estimateTokens(message.content), 0) + transcriptMemories.reduce((sum, text) => sum + estimateTokens(text), 0),
+    [messages, transcriptMemories]
+  );
+
+  const topInterests = useMemo(() => {
+    const freq = new Map<string, number>();
+    messages
+      .filter((message) => message.role === 'user')
+      .flatMap((message) => tokenizeText(message.content))
+      .forEach((token) => freq.set(token, (freq.get(token) ?? 0) + 1));
+
+    return [...freq.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([token]) => token);
+  }, [messages]);
+
+  const recurringThemes = useMemo(() => {
+    const freq = new Map<string, number>();
+    messages
+      .flatMap((message) => tokenizeText(message.content))
+      .forEach((token) => freq.set(token, (freq.get(token) ?? 0) + 1));
+
+    return [...freq.entries()]
+      .filter(([, count]) => count >= 2)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 2)
+      .map(([token]) => token);
+  }, [messages]);
+
   return (
     <section className="panel">
       <h2>Memory</h2>
-      <p className="helper-text">Mixed timeline: chats, summaries, voice notes, image memories.</p>
+      <p className="helper-text">Timeline + pinned snippets make memory behavior visible and trustworthy.</p>
+
+      <article className="card">
+        <h3>Memory Snapshot</h3>
+        <p>
+          I know about your <strong>{topInterests.length}</strong> interests ({topInterests.join(', ') || 'growing...'}), and{' '}
+          <strong>{recurringThemes.length}</strong> recurring themes ({recurringThemes.join(', ') || 'none yet'}).
+        </p>
+        <ul className="memory-list compact">
+          <li>
+            <strong>{voiceNotes.length}</strong>
+            <span>Voice notes</span>
+          </li>
+          <li>
+            <strong>{messages.length}</strong>
+            <span>Chat messages</span>
+          </li>
+          <li>
+            <strong>~{totalTokenEstimate}</strong>
+            <span>Estimated memory tokens</span>
+          </li>
+        </ul>
+      </article>
 
       <article className="card">
         <h3>Pinned Summary</h3>
         <p>{summary?.text || 'No summary yet. Start chatting to build memory.'}</p>
+      </article>
+
+      <article className="card">
+        <h3>Memory Timeline (last 7 days)</h3>
+        <ul className="memory-list compact">
+          {timelineMessages.length || timelineVoice.length ? (
+            <>
+              {timelineMessages.map((message) => (
+                <li key={message.id}>
+                  <strong>
+                    {new Date(message.createdAt).toLocaleString()} · {message.role}
+                  </strong>
+                  <span>{snippet(message.content)}</span>
+                  <button className="ghost" onClick={() => togglePinned(message.id)}>
+                    {pinnedIds.has(message.id) ? 'Unpin' : 'Pin'}
+                  </button>
+                </li>
+              ))}
+              {timelineVoice.map((note) => (
+                <li key={`voice-${note.id}`}>
+                  <strong>{new Date(note.createdAt).toLocaleString()} · voice note</strong>
+                  <span>{note.transcript ? `Transcript: ${snippet(note.transcript)}` : 'No transcript available.'}</span>
+                </li>
+              ))}
+            </>
+          ) : (
+            <li>
+              <span className="helper-text">No memory activity in the last 7 days.</span>
+            </li>
+          )}
+        </ul>
+      </article>
+
+      <article className="card">
+        <h3>Pinned Memories</h3>
+        <ul className="memory-list compact">
+          {[...pinnedIds].length ? (
+            [...pinnedIds].map((id) => {
+              const message = messages.find((item) => item.id === id);
+              if (!message) {
+                return null;
+              }
+              return (
+                <li key={`pinned-${id}`}>
+                  <strong>{message.role}</strong>
+                  <span>{snippet(message.content)}</span>
+                  <button className="ghost" onClick={() => togglePinned(id)}>
+                    Unpin
+                  </button>
+                </li>
+              );
+            })
+          ) : (
+            <li>
+              <span className="helper-text">Pin a memory from timeline to keep it handy.</span>
+            </li>
+          )}
+        </ul>
       </article>
 
       <article className="card">
@@ -63,38 +200,14 @@ export const MemoryPage = ({ messages, summary, voiceNotes, imageMemories = [], 
                 <span>{note.transcript ? `Transcript: ${snippet(note.transcript)}` : 'No transcript available.'}</span>
                 <button className="ghost danger" onClick={() => void onDeleteVoiceNote(note.id)}>Delete</button>
               </li>
-            ))}
-          </ul>
-        </article>
-      ) : null}
-
-      {(filter === 'all' || filter === 'image') ? (
-        <article className="card">
-          <h3>Image Memories ({imageMemories.length})</h3>
-          <div className="image-grid">
-            {imageMemories.map((image) => (
-              <ImageMemoryCard
-                key={image.id}
-                image={image}
-                onUpdate={async () => {}}
-                onDelete={onDeleteImageMemory}
-                onAttachToChat={() => {}}
-              />
-            ))}
-          </div>
-        </article>
-      ) : null}
-
-      {(filter === 'all' || filter === 'chat') ? (
-        <article className="card">
-          <h3>Recent Turns ({messages.length})</h3>
-          <ul className="memory-list">
-            {messages.slice(-20).map((message) => (
-              <li key={message.id}><strong>{message.role}</strong><span>{message.content}</span></li>
-            ))}
-          </ul>
-        </article>
-      ) : null}
+            ))
+          ) : (
+            <li>
+              <span className="helper-text">No voice notes stored yet.</span>
+            </li>
+          )}
+        </ul>
+      </article>
     </section>
   );
 };

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { StatusPill } from '../components/StatusPill';
 import { SyncStatusBadge } from '../components/SyncStatusBadge';
 import { VoiceButton } from '../components/VoiceButton';
@@ -120,6 +120,12 @@ export const ChatPage = ({
     }
   };
 
+
+  const contextPreview = useMemo(
+    () => retrieveContext(messages, summary, draft, [...transcriptMemories, ...imageMemoryTexts]),
+    [messages, summary, draft, transcriptMemories, imageMemoryTexts]
+  );
+
   const handleSend = async () => {
     const content = draft.trim();
     if (!content || isStreaming || modelStatus === 'loading') return;
@@ -201,6 +207,13 @@ export const ChatPage = ({
       {voice.error ? <p className="error-text">{voice.error}</p> : null}
       {voiceNotice ? <p className="helper-text">{voiceNotice}</p> : null}
       {tts.error ? <p className="helper-text">TTS: {tts.error}</p> : null}
+
+      {contextPreview ? (
+        <article className="card context-preview">
+          <h3>Memory used for next reply</h3>
+          <p>{contextPreview}</p>
+        </article>
+      ) : null}
 
       {bridgeEnabled ? (
         <div className="voice-note-strip">

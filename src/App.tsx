@@ -33,13 +33,21 @@ import { updateRollingSummary } from './memory/summary';
 import { ChatPage } from './pages/ChatPage';
 import { MemoryPage } from './pages/MemoryPage';
 import { SettingsPage } from './pages/SettingsPage';
-import { CapturePage } from './pages/CapturePage';
+import { FirstRunFlow } from './components/FirstRunFlow';
 import { getProvider, getProviderLabel, getProviderOptions } from './providers/providerRegistry';
 import type { ProviderGenerateRequest } from './providers/types';
 import type { SyncPreferences, TrustedDevice } from './sync/types';
 import type { AppSettings, ChatMessage, DeviceDiagnostics, MemorySummary, ModelStatus } from './types';
 import type { VoiceNote } from './voice/types';
 import type { ImageMemory } from './camera/types';
+
+
+interface ImageMemory {
+  id: string;
+  caption?: string;
+  notes?: string;
+  analysisSummary?: string;
+}
 
 
 interface ImageMemory {
@@ -98,6 +106,7 @@ export const App = () => {
   const [diagnostics, setDiagnostics] = useState<DeviceDiagnostics>(DEFAULT_DIAGNOSTICS);
   const [activeProviderLabel, setActiveProviderLabel] = useState('Local');
   const [modelReloadCounter, setModelReloadCounter] = useState(0);
+  const [onboardingComplete, setOnboardingComplete] = useState<boolean>(() => localStorage.getItem('pocketbrain-onboarding-v1') === 'done');
 
   const refreshLocalData = async () => {
     const [storedMessages, storedSummary, storedSettings, storedVoiceNotes, bridges, images, devices] = await Promise.all([
@@ -331,11 +340,23 @@ export const App = () => {
     setTrustedDevices(await getTrustedDevices());
   };
 
+  const onCompleteOnboarding = async (patch: Partial<AppSettings>) => {
+    const merged = { ...settings, ...patch };
+    setSettings(merged);
+    await saveSettings(merged);
+    localStorage.setItem('pocketbrain-onboarding-v1', 'done');
+    setOnboardingComplete(true);
+  };
+
   const transcriptMemories = voiceNotes.map((note) => note.transcript).filter((text): text is string => Boolean(text));
   const imageMemoryTexts = imageMemories
     .flatMap((memory) => [memory.analysisSummary, memory.caption, memory.notes])
     .map((text) => text?.trim() ?? '')
     .filter((text): text is string => Boolean(text));
+
+  if (!onboardingComplete) {
+    return <FirstRunFlow onComplete={onCompleteOnboarding} />;
+  }
 
   return (
     <Routes>

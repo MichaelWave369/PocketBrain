@@ -17,26 +17,12 @@ const toMemoryMessages = (items: string[] | undefined, prefix: 'voice' | 'image'
       createdAt: 0
     }));
 
-export interface RetrievalOptions {
-  userInput: string;
-  draftInput?: string;
-  transcriptMemories?: string[];
-  imageMemories?: string[];
-}
-
-const toMemoryMessages = (items: string[] | undefined, prefix: 'voice' | 'image'): ChatMessage[] =>
-  (items ?? [])
-    .map((text) => text.trim())
-    .filter(Boolean)
-    .map((text, index) => ({
-      id: `${prefix}-${index}`,
-      role: 'assistant' as const,
-      content: prefix === 'image' ? `Image memory: ${text}` : text,
-      createdAt: 0
-    }));
-
 export const tokenizeText = (text: string): string[] =>
-  text.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter((token) => token.length > 1 && !STOPWORDS.has(token));
+  text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter((token) => token.length > 1 && !STOPWORDS.has(token));
 
 const truncateToBudget = (parts: string[]): string => {
   let total = 0;
@@ -88,6 +74,12 @@ export const searchMessages = (
 ): ChatMessage[] => {
   const queryTokens = tokenizeText(query);
   if (!queryTokens.length) return [];
+
+  const allMessages = [
+    ...messages,
+    ...toMemoryMessages(options?.transcriptMemories, 'voice'),
+    ...toMemoryMessages(options?.imageMemories, 'image')
+  ];
 
   const allMessages = [
     ...messages,
