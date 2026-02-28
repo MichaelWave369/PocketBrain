@@ -138,7 +138,7 @@ export const ChatPage = ({
     try {
       const request: ProviderGenerateRequest = {
         systemPrompt: SYSTEM_PROMPT,
-        context: retrieveContext(messages, summary, content, [...transcriptMemories, ...imageTexts]),
+        context: retrieveContext(messages, summary, content, [...transcriptMemories, ...imageMemoryTexts]),
         userInput: content
       };
 
