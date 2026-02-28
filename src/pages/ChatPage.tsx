@@ -18,6 +18,7 @@ interface ChatPageProps {
   voiceNotes: VoiceNote[];
   imageMemories: ImageMemory[];
   transcriptMemories: string[];
+  imageMemoryTexts?: string[];
   modelStatus: ModelStatus;
   modelError: string | null;
   modelProgressText: string;
@@ -44,6 +45,7 @@ export const ChatPage = ({
   voiceNotes,
   imageMemories,
   transcriptMemories,
+  imageMemoryTexts = [],
   modelStatus,
   modelError,
   modelProgressText,
@@ -135,11 +137,7 @@ export const ChatPage = ({
 
       const request: ProviderGenerateRequest = {
         systemPrompt: SYSTEM_PROMPT,
-        context: retrieveContext(messages, summary, {
-          userInput: content,
-          draftInput: draft,
-          transcriptMemories
-        }),
+        context: retrieveContext(messages, summary, content, [...transcriptMemories, ...imageMemoryTexts]),
         userInput: content
       };
 

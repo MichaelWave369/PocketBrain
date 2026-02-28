@@ -24,7 +24,7 @@ export interface ChatProvider {
   initialize: (context: ProviderContext) => Promise<void>;
   isReady: () => boolean;
   generate: (request: ProviderGenerateRequest) => Promise<string>;
-  generateStream: (request: ProviderGenerateRequest) => AsyncGenerator<string>;
+  generateStream: (request: ProviderGenerateRequest) => AsyncGenerator<string, void, unknown>;
   interrupt: () => Promise<void>;
   getModelList?: () => Promise<string[]>;
   testConnection?: () => Promise<{ ok: boolean; message: string }>;
