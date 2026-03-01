@@ -32,6 +32,7 @@ interface ChatPageProps {
   onSaveVoiceNote: (note: VoiceNote) => Promise<void>;
   onTranscribeWithBridge: (audioBlob: Blob) => Promise<string>;
   onStopGeneration: () => Promise<void>;
+  onRequestModelLoad: () => void;
   onClear: () => Promise<void>;
   onResetModel: () => Promise<void>;
 }
@@ -58,6 +59,7 @@ export const ChatPage = ({
   onSaveVoiceNote,
   onTranscribeWithBridge,
   onStopGeneration,
+  onRequestModelLoad,
   onClear,
   onResetModel
 }: ChatPageProps) => {
@@ -99,7 +101,7 @@ export const ChatPage = ({
 
     if (result.transcript) {
       setDraft((previous) => `${previous} ${result.transcript}`.trim());
-      setVoiceNotice('✅ Voice transcribed and inserted into draft.');
+      setVoiceNotice('Voice transcribed and inserted into draft.');
       return;
     }
 
@@ -111,14 +113,13 @@ export const ChatPage = ({
     try {
       const transcript = await onTranscribeWithBridge(note.audioBlob);
       setDraft((previous) => `${previous} ${transcript}`.trim());
-      setVoiceNotice('✅ Bridge transcription inserted into draft.');
+      setVoiceNotice('Bridge transcription inserted into draft.');
     } catch (error) {
       setVoiceNotice(error instanceof Error ? error.message : 'Bridge transcription failed.');
     } finally {
       setBridgeTranscribingId(null);
     }
   };
-
 
   const contextPreview = useMemo(
     () => retrieveContext(messages, summary, draft, [...transcriptMemories, ...imageMemoryTexts]),
@@ -128,6 +129,13 @@ export const ChatPage = ({
   const handleSend = async () => {
     const content = draft.trim();
     if (!content || isStreaming || modelStatus === 'loading') return;
+
+    // If local AI isn't loaded yet, trigger deferred load and inform user
+    if (modelStatus === 'idle') {
+      onRequestModelLoad();
+      setVoiceNotice('Loading local AI — please wait, then send your message again.');
+      return;
+    }
 
     const userMessage: ChatMessage = { id: createId(), role: 'user', content, createdAt: Date.now() };
     setPendingUserMessage(userMessage);
@@ -173,6 +181,8 @@ export const ChatPage = ({
   const renderedMessages = [...messages];
   if (pendingUserMessage && isStreaming) renderedMessages.push(pendingUserMessage);
 
+  const isModelIdle = modelStatus === 'idle';
+
   return (
     <section className="panel chat-panel">
       <div className="chat-toolbar">
@@ -184,10 +194,18 @@ export const ChatPage = ({
         <div className="chat-actions">
           <VoiceButton state={voice.state} elapsedLabel={voice.elapsedLabel} onStart={voice.beginRecording} onStop={handleVoiceStop} onCancel={voice.cancelRecording} onRetry={voice.retry} />
           {isStreaming ? <button className="ghost danger" onClick={() => void handleStop()}>Stop</button> : null}
-          <button className="ghost" onClick={() => void onClear()}>Clear chat</button>
-          <button className="ghost" onClick={() => void onResetModel()}>Reset runtime</button>
+          {!isStreaming ? <button className="ghost" onClick={() => void onClear()}>Clear</button> : null}
+          {!isStreaming ? <button className="ghost" onClick={() => void onResetModel()}>Reset</button> : null}
         </div>
       </div>
+
+      {/* Deferred model load CTA — only shown before user requests model load */}
+      {isModelIdle ? (
+        <div className="model-load-cta">
+          <p className="helper-text">{modelProgressText}</p>
+          <button onClick={onRequestModelLoad}>Load Local AI</button>
+        </div>
+      ) : null}
 
       {modelStatus === 'loading' ? (
         <div className="progress-wrap" role="status">
@@ -214,7 +232,7 @@ export const ChatPage = ({
         <div className="voice-note-strip">
           {voiceNotes.filter((note) => !note.transcript).slice(0, 2).map((note) => (
             <button key={note.id} className="ghost" onClick={() => void transcribeWithBridge(note)} disabled={bridgeTranscribingId === note.id}>
-              {bridgeTranscribingId === note.id ? 'Transcribing…' : 'Transcribe using Bridge'}
+              {bridgeTranscribingId === note.id ? 'Transcribing…' : 'Transcribe via Bridge'}
             </button>
           ))}
         </div>
@@ -226,9 +244,14 @@ export const ChatPage = ({
           <article key={message.id} className={`message message-${message.role}`}>
             <strong>{message.role === 'user' ? 'You' : 'PocketBrain'}</strong>
             <p>{message.content}</p>
-            {message.role === 'assistant' ? (
-              <button className="ghost speak-btn" onClick={() => (tts.isSpeakingText(message.content) ? tts.stop() : tts.speak(message.content))} aria-label="Speak assistant message">
-                {tts.isSpeakingText(message.content) ? '⏹ Stop speaking' : '🔊 Speak'}
+            {/* TTS read-aloud button — only shown when TTS is enabled */}
+            {message.role === 'assistant' && ttsSettings.enabled ? (
+              <button
+                className="ghost speak-btn"
+                onClick={() => (tts.isSpeakingText(message.content) ? tts.stop() : tts.speak(message.content))}
+                aria-label={tts.isSpeakingText(message.content) ? 'Stop speaking' : 'Read aloud'}
+              >
+                {tts.isSpeakingText(message.content) ? '⏹ Stop' : '🔊 Read aloud'}
               </button>
             ) : null}
           </article>
@@ -243,8 +266,18 @@ export const ChatPage = ({
       </div>
 
       <div className="composer">
-        <textarea placeholder="Type your message" value={draft} onChange={(event) => setDraft(event.target.value)} rows={2} />
-        <button onClick={() => void handleSend()} disabled={isStreaming || !draft.trim() || modelStatus === 'loading'}>Send</button>
+        <textarea
+          placeholder={isModelIdle ? 'Load local AI above, or switch to Bridge mode in Settings' : 'Type your message'}
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          rows={2}
+        />
+        <button
+          onClick={() => void handleSend()}
+          disabled={isStreaming || !draft.trim() || modelStatus === 'loading'}
+        >
+          Send
+        </button>
       </div>
     </section>
   );

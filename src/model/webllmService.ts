@@ -54,6 +54,9 @@ const MODEL_FALLBACKS = [
   'SmolLM2-1.7B-Instruct-q4f16_1-MLC'
 ];
 
+/** Static model list that does NOT load the WebLLM module. Safe to use at startup. */
+export const STATIC_MODEL_LIST: string[] = [...MODEL_FALLBACKS];
+
 let cachedEngine: WebLlmEngine | null = null;
 let cachedKey: string | null = null;
 let failedState = false;
