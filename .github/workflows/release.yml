@@ -2,6 +2,8 @@ name: Create GitHub Release
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
   workflow_dispatch:
@@ -24,12 +26,39 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine tag name
+        id: tag
+        run: |
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref_type }}" == "tag" ]]; then
+            echo "tag_name=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+            echo "should_release=true" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "tag_name=${{ github.event.inputs.tag_name }}" >> $GITHUB_OUTPUT
+            echo "should_release=true" >> $GITHUB_OUTPUT
+          else
+            # Push to main branch - auto-release based on package.json version
+            VERSION=$(jq -r '.version' package.json)
+            TAG="v${VERSION}"
+            echo "tag_name=${TAG}" >> $GITHUB_OUTPUT
+            # Check if tag already exists
+            if git tag -l "${TAG}" | grep -q "${TAG}"; then
+              echo "should_release=false" >> $GITHUB_OUTPUT
+              echo "Tag ${TAG} already exists, skipping release"
+            else
+              echo "should_release=true" >> $GITHUB_OUTPUT
+              echo "Will create release for ${TAG}"
+            fi
+          fi
 
       - name: Create Release
+        if: steps.tag.outputs.should_release == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
-          name: ${{ github.event.inputs.release_name || format('PocketBrain {0}', github.ref_name) }}
+          tag_name: ${{ steps.tag.outputs.tag_name }}
+          name: ${{ github.event.inputs.release_name || format('PocketBrain {0} - Optimized, Camera-Ready, Device Sync', steps.tag.outputs.tag_name) }}
           body: |
             ## 🚀 PocketBrain v0.6.0 - Optimized & Feature-Complete
 
