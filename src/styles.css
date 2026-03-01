@@ -409,3 +409,142 @@ hr {
   max-height: 120px;
   overflow: auto;
 }
+
+/* ─── Bundle optimisation: deferred model load CTA ─────────────────────── */
+.model-load-cta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem;
+  background: #1e293b;
+  border-radius: 10px;
+  flex-wrap: wrap;
+}
+
+.model-load-cta p {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ─── Priority 2: Image memory gallery ─────────────────────────────────── */
+.image-memory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+
+.image-memory-tile {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.image-memory-tile-img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #1e293b;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.image-memory-tile-img:hover {
+  opacity: 0.85;
+}
+
+.image-memory-tile-label {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.memory-image-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.memory-thumb {
+  width: 52px;
+  height: 52px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #1e293b;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.memory-image-expanded {
+  margin-top: 0.5rem;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.memory-image-full {
+  width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 1px solid #1e293b;
+  background: #020617;
+}
+
+.memory-image {
+  width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 1px solid #1e293b;
+  background: #020617;
+}
+
+/* ─── Priority 3: Pairing code card ────────────────────────────────────── */
+.pairing-code-card h4 {
+  margin: 0 0 0.5rem;
+}
+
+.pairing-steps {
+  margin: 0 0 0.75rem;
+  padding-left: 1.2rem;
+  color: #cbd5e1;
+  font-size: 0.85rem;
+  line-height: 1.7;
+}
+
+.pairing-payload-text {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  word-break: break-all;
+}
+
+/* ─── Priority 4: TTS speak button ─────────────────────────────────────── */
+.speak-btn {
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  padding: 0.3rem 0.6rem;
+}
+
+/* ─── Sync badge colour variants ────────────────────────────────────────── */
+.sync-badge {
+  transition: border-color 0.2s, color 0.2s;
+}
+
+/* ─── Capture page image grid ───────────────────────────────────────────── */
+.image-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+@media (min-width: 480px) {
+  .image-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

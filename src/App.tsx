@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { AppLayout } from './layouts/AppLayout';
 import { fromImageMemoryData, fromVoiceNoteData, toImageMemoryData, toVoiceNoteData, type BackupData, type ImportMode } from './backup/types';
-import { getCuratedModelList, getDeviceDiagnostics, resetModelEngine, type ProgressReport } from './model/webllmService';
+import { STATIC_MODEL_LIST, getCuratedModelList, getDeviceDiagnostics, resetModelEngine, type ProgressReport } from './model/webllmService';
 import {
   clearAllLocalData,
   clearBridgeSettings,
@@ -30,10 +30,6 @@ import {
   saveVoiceNote
 } from './memory/indexedDb';
 import { updateRollingSummary } from './memory/summary';
-import { CapturePage } from './pages/CapturePage';
-import { ChatPage } from './pages/ChatPage';
-import { MemoryPage } from './pages/MemoryPage';
-import { SettingsPage } from './pages/SettingsPage';
 import { FirstRunFlow } from './components/FirstRunFlow';
 import { getProvider, getProviderLabel, getProviderOptions } from './providers/providerRegistry';
 import type { ProviderGenerateRequest } from './providers/types';
@@ -41,6 +37,12 @@ import type { SyncPreferences, TrustedDevice } from './sync/types';
 import type { AppSettings, ChatMessage, DeviceDiagnostics, MemorySummary, ModelStatus } from './types';
 import type { VoiceNote } from './voice/types';
 import type { ImageMemory } from './camera/types';
+
+// Lazy-loaded page chunks — each page is a separate JS chunk for fast initial load
+const ChatPage = lazy(() => import('./pages/ChatPage').then((m) => ({ default: m.ChatPage })));
+const CapturePage = lazy(() => import('./pages/CapturePage').then((m) => ({ default: m.CapturePage })));
+const MemoryPage = lazy(() => import('./pages/MemoryPage').then((m) => ({ default: m.MemoryPage })));
+const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })));
 
 const DEFAULT_SETTINGS: AppSettings = {
   localOnlyMode: true,
@@ -74,6 +76,12 @@ const DEFAULT_DIAGNOSTICS: DeviceDiagnostics = {
   maxStorageBufferBindingSize: 'Detecting...'
 };
 
+const PageFallback = () => (
+  <div className="panel" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <p className="helper-text">Loading...</p>
+  </div>
+);
+
 export const App = () => {
   const navigate = useNavigate();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -86,12 +94,15 @@ export const App = () => {
   const [syncPreferences, setSyncPreferences] = useState<SyncPreferences>(DEFAULT_SYNC_PREFERENCES);
   const [modelStatus, setModelStatus] = useState<ModelStatus>('idle');
   const [modelError, setModelError] = useState<string | null>(null);
-  const [modelProgressText, setModelProgressText] = useState('Waiting to load provider...');
+  const [modelProgressText, setModelProgressText] = useState('Local AI ready to load on demand');
   const [modelProgressPct, setModelProgressPct] = useState<number | null>(null);
-  const [modelOptions, setModelOptions] = useState<string[]>([DEFAULT_SETTINGS.selectedModel]);
+  // Start with static list — no WebLLM import needed at startup
+  const [modelOptions, setModelOptions] = useState<string[]>(STATIC_MODEL_LIST);
   const [diagnostics, setDiagnostics] = useState<DeviceDiagnostics>(DEFAULT_DIAGNOSTICS);
   const [activeProviderLabel, setActiveProviderLabel] = useState('Local');
   const [modelReloadCounter, setModelReloadCounter] = useState(0);
+  // Deferred model load: local WebLLM only initialises when user requests it
+  const [modelLoadRequested, setModelLoadRequested] = useState(false);
   const [onboardingComplete, setOnboardingComplete] = useState<boolean>(() => localStorage.getItem('pocketbrain-onboarding-v1') === 'done');
 
   const refreshLocalData = async () => {
@@ -115,18 +126,38 @@ export const App = () => {
   };
 
   useEffect(() => {
+    // Bootstrap: load local IndexedDB data + GPU diagnostics.
+    // Model list and WebLLM engine are NOT loaded here — deferred to user request.
     const bootstrap = async () => {
-      const [availableModels, deviceStats] = await Promise.all([getCuratedModelList(), getDeviceDiagnostics()]);
+      const deviceStats = await getDeviceDiagnostics();
       await refreshLocalData();
-      setModelOptions(availableModels.length ? availableModels : [DEFAULT_SETTINGS.selectedModel]);
       setDiagnostics((prev) => ({ ...prev, ...deviceStats }));
     };
 
     void bootstrap();
   }, []);
 
+  // Refresh expanded model list lazily (only when settings page likely needs it)
+  const onRefreshModelList = async () => {
+    try {
+      const availableModels = await getCuratedModelList();
+      setModelOptions(availableModels.length ? availableModels : STATIC_MODEL_LIST);
+    } catch {
+      // Keep static list on failure
+    }
+  };
+
   useEffect(() => {
     const initializeProvider = async () => {
+      // For local WebLLM: wait for explicit user request to avoid heavy startup
+      if (settings.providerType === 'local-webllm' && !modelLoadRequested) {
+        setModelStatus('idle');
+        setActiveProviderLabel(getProviderLabel('local-webllm'));
+        setModelProgressText('Local AI ready — tap "Load AI" to initialize');
+        setModelProgressPct(null);
+        return;
+      }
+
       setModelStatus('loading');
       setModelError(null);
       setModelProgressPct(0);
@@ -162,7 +193,7 @@ export const App = () => {
     };
 
     void initializeProvider();
-  }, [settings.providerType, settings.selectedModel, settings.bridgeEndpointUrl, settings.bridgeModelName, settings.bridgeApiKey, settings.useWebWorker, settings.useIndexedDbCache, modelReloadCounter]);
+  }, [settings.providerType, settings.selectedModel, settings.bridgeEndpointUrl, settings.bridgeModelName, settings.bridgeApiKey, settings.useWebWorker, settings.useIndexedDbCache, modelReloadCounter, modelLoadRequested]);
 
   const onSend = async (userMessage: ChatMessage, assistantMessage: ChatMessage) => {
     setMessages((prev) => [...prev, userMessage, assistantMessage]);
@@ -242,6 +273,10 @@ export const App = () => {
     setModelReloadCounter((value) => value + 1);
   };
 
+  const onRequestModelLoad = () => {
+    setModelLoadRequested(true);
+  };
+
   const onTestBridgeConnection = async (): Promise<{ ok: boolean; message: string }> => {
     const provider = getProvider(settings.providerType);
     if (!provider.testConnection) return { ok: true, message: 'Local mode available after model load.' };
@@ -262,7 +297,7 @@ export const App = () => {
   const onExportData = async (options: { includeVoiceBlobs: boolean; includeImageBlobs: boolean; metadataOnly: boolean }): Promise<BackupData> => ({
     version: 1,
     createdAt: new Date().toISOString(),
-    appVersion: '0.5.0',
+    appVersion: '0.6.0',
     messages,
     summary,
     settings,
@@ -330,82 +365,107 @@ export const App = () => {
     .map((text) => text?.trim() ?? '')
     .filter((text): text is string => Boolean(text));
 
+  const syncStatusLabel = trustedDevices.length > 0
+    ? (trustedDevices.length === 1 ? '1 device' : `${trustedDevices.length} devices`)
+    : 'offline';
+
   if (!onboardingComplete) {
     return <FirstRunFlow onComplete={onCompleteOnboarding} />;
   }
 
   return (
     <Routes>
-      <Route element={<AppLayout />}> 
+      <Route element={<AppLayout />}>
         <Route
           path="/"
           element={
-            <ChatPage
-              messages={messages}
-              summary={summary}
-              voiceNotes={voiceNotes}
-              imageMemories={imageMemories}
-              transcriptMemories={transcriptMemories}
-              imageMemoryTexts={imageMemoryTexts}
-              modelStatus={modelStatus}
-              modelError={modelError}
-              modelProgressText={modelProgressText}
-              modelProgressPct={modelProgressPct}
-              activeProviderLabel={activeProviderLabel}
-              syncStatusLabel={trustedDevices.length ? 'trusted' : 'offline'}
-              bridgeEnabled={settings.providerType !== 'local-webllm'}
-              ttsSettings={{
-                enabled: settings.ttsEnabled,
-                autoReadReplies: settings.ttsAutoReadReplies,
-                voiceURI: settings.ttsVoiceURI,
-                rate: settings.ttsRate,
-                pitch: settings.ttsPitch,
-                volume: settings.ttsVolume
-              }}
-              onGenerateWithProvider={onGenerateWithProvider}
-              onSend={onSend}
-              onSaveVoiceNote={onSaveVoiceNote}
-              onTranscribeWithBridge={onTranscribeWithBridge}
-              onStopGeneration={onStopGeneration}
-              onClear={async () => {
-                await clearMessages();
-                setMessages([]);
-              }}
-              onResetModel={onResetModel}
-            />
+            <Suspense fallback={<PageFallback />}>
+              <ChatPage
+                messages={messages}
+                summary={summary}
+                voiceNotes={voiceNotes}
+                imageMemories={imageMemories}
+                transcriptMemories={transcriptMemories}
+                imageMemoryTexts={imageMemoryTexts}
+                modelStatus={modelStatus}
+                modelError={modelError}
+                modelProgressText={modelProgressText}
+                modelProgressPct={modelProgressPct}
+                activeProviderLabel={activeProviderLabel}
+                syncStatusLabel={syncStatusLabel}
+                bridgeEnabled={settings.providerType !== 'local-webllm'}
+                ttsSettings={{
+                  enabled: settings.ttsEnabled,
+                  autoReadReplies: settings.ttsAutoReadReplies,
+                  voiceURI: settings.ttsVoiceURI,
+                  rate: settings.ttsRate,
+                  pitch: settings.ttsPitch,
+                  volume: settings.ttsVolume
+                }}
+                onGenerateWithProvider={onGenerateWithProvider}
+                onSend={onSend}
+                onSaveVoiceNote={onSaveVoiceNote}
+                onTranscribeWithBridge={onTranscribeWithBridge}
+                onStopGeneration={onStopGeneration}
+                onRequestModelLoad={onRequestModelLoad}
+                onClear={async () => {
+                  await clearMessages();
+                  setMessages([]);
+                }}
+                onResetModel={onResetModel}
+              />
+            </Suspense>
           }
         />
         <Route
           path="/capture"
-          element={<CapturePage images={imageMemories} onSaveImage={onSaveImage} onUpdateImage={onUpdateImage} onDeleteImage={onDeleteImage} onAttachImageToChat={onAttachImageToChat} />}
+          element={
+            <Suspense fallback={<PageFallback />}>
+              <CapturePage images={imageMemories} onSaveImage={onSaveImage} onUpdateImage={onUpdateImage} onDeleteImage={onDeleteImage} onAttachImageToChat={onAttachImageToChat} />
+            </Suspense>
+          }
         />
         <Route
           path="/memory"
-          element={<MemoryPage messages={messages} summary={summary} voiceNotes={voiceNotes} imageMemories={imageMemoryTexts} onDeleteVoiceNote={onDeleteVoiceNote} />}
+          element={
+            <Suspense fallback={<PageFallback />}>
+              <MemoryPage
+                messages={messages}
+                summary={summary}
+                voiceNotes={voiceNotes}
+                imageMemories={imageMemories}
+                onDeleteVoiceNote={onDeleteVoiceNote}
+                onDeleteImageMemory={onDeleteImage}
+              />
+            </Suspense>
+          }
         />
         <Route
           path="/settings"
           element={
-            <SettingsPage
-              settings={settings}
-              modelOptions={modelOptions}
-              providerOptions={getProviderOptions().map((item) => ({ value: item.value, label: item.label }))}
-              diagnostics={diagnostics}
-              trustedBridgeEndpoints={trustedBridgeEndpoints}
-              trustedDevices={trustedDevices}
-              syncPreferences={syncPreferences}
-              onSyncPreferencesChange={setSyncPreferences}
-              onSettingsChange={onSettingsChange}
-              onResetModel={onResetModel}
-              onTestBridgeConnection={onTestBridgeConnection}
-              onApplyPairing={onApplyPairing}
-              onExportData={onExportData}
-              onImportData={onImportData}
-              onClearData={onClearData}
-              onTrustDevice={onTrustDevice}
-              onRevokeDevice={onRevokeDevice}
-              onDescribeImageWithBridge={onDescribeImageWithBridge}
-            />
+            <Suspense fallback={<PageFallback />}>
+              <SettingsPage
+                settings={settings}
+                modelOptions={modelOptions}
+                providerOptions={getProviderOptions().map((item) => ({ value: item.value, label: item.label }))}
+                diagnostics={diagnostics}
+                trustedBridgeEndpoints={trustedBridgeEndpoints}
+                trustedDevices={trustedDevices}
+                syncPreferences={syncPreferences}
+                onSyncPreferencesChange={setSyncPreferences}
+                onSettingsChange={onSettingsChange}
+                onResetModel={onResetModel}
+                onTestBridgeConnection={onTestBridgeConnection}
+                onApplyPairing={onApplyPairing}
+                onExportData={onExportData}
+                onImportData={onImportData}
+                onClearData={onClearData}
+                onTrustDevice={onTrustDevice}
+                onRevokeDevice={onRevokeDevice}
+                onDescribeImageWithBridge={onDescribeImageWithBridge}
+                onRefreshModelList={onRefreshModelList}
+              />
+            </Suspense>
           }
         />
       </Route>

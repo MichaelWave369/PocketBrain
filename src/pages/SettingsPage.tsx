@@ -27,6 +27,7 @@ interface SettingsPageProps {
   onTrustDevice: (device: TrustedDevice) => Promise<void>;
   onRevokeDevice: (deviceId: string) => Promise<void>;
   onDescribeImageWithBridge: (imageBlob: Blob) => Promise<string>;
+  onRefreshModelList: () => Promise<void>;
 }
 
 export const SettingsPage = ({
@@ -47,7 +48,8 @@ export const SettingsPage = ({
   onClearData,
   onTrustDevice,
   onRevokeDevice,
-  onDescribeImageWithBridge
+  onDescribeImageWithBridge,
+  onRefreshModelList
 }: SettingsPageProps) => {
   const [connectionStatus, setConnectionStatus] = useState<string | null>(null);
   const [visionStatus, setVisionStatus] = useState('');
@@ -92,6 +94,9 @@ export const SettingsPage = ({
             {modelOptions.map((modelId) => <option key={modelId} value={modelId}>{modelId}</option>)}
           </select>
         </label>
+        <div className="settings-actions" style={{ marginTop: '0.5rem' }}>
+          <button className="ghost" onClick={() => void onRefreshModelList()}>Refresh model list</button>
+        </div>
       </article>
 
       {isBridgeProvider ? (

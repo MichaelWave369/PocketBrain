@@ -2,12 +2,13 @@ import { useMemo, useState } from 'react';
 import { searchMessages, tokenizeText } from '../retrieval/retriever';
 import type { ChatMessage, MemorySummary } from '../types';
 import type { VoiceNote } from '../voice/types';
+import type { ImageMemory } from '../camera/types';
 
 interface MemoryPageProps {
   messages: ChatMessage[];
   summary: MemorySummary | null;
   voiceNotes: VoiceNote[];
-  imageMemories?: string[];
+  imageMemories?: ImageMemory[];
   onDeleteVoiceNote: (id: string) => Promise<void>;
   onDeleteImageMemory?: (id: string) => Promise<void>;
 }
@@ -20,7 +21,7 @@ const getDayMs = () => 24 * 60 * 60 * 1000;
 
 const estimateTokens = (text: string) => Math.ceil(text.trim().split(/\s+/).filter(Boolean).length * 1.3);
 
-export const MemoryPage = ({ messages, summary, voiceNotes, imageMemories = [], onDeleteVoiceNote }: MemoryPageProps) => {
+export const MemoryPage = ({ messages, summary, voiceNotes, imageMemories = [], onDeleteVoiceNote, onDeleteImageMemory }: MemoryPageProps) => {
   const [query, setQuery] = useState('');
   const [pinnedIds, setPinnedIds] = useState<Set<string>>(() => {
     try {
@@ -30,12 +31,19 @@ export const MemoryPage = ({ messages, summary, voiceNotes, imageMemories = [], 
       return new Set<string>();
     }
   });
+  const [expandedImageId, setExpandedImageId] = useState<string | null>(null);
 
   const transcriptMemories = voiceNotes.map((note) => note.transcript).filter((text): text is string => Boolean(text));
 
+  // Derive text snippets from ImageMemory objects for search
+  const imageMemoryTexts = imageMemories
+    .flatMap((m) => [m.analysisSummary, m.caption, m.notes])
+    .map((t) => t?.trim() ?? '')
+    .filter((t): t is string => Boolean(t));
+
   const matches = useMemo(
-    () => searchMessages(messages, query, { transcriptMemories, imageMemories }),
-    [messages, query, transcriptMemories, imageMemories]
+    () => searchMessages(messages, query, { transcriptMemories, imageMemories: imageMemoryTexts }),
+    [messages, query, transcriptMemories, imageMemoryTexts]
   );
 
   const togglePinned = (id: string) => {
@@ -52,6 +60,7 @@ export const MemoryPage = ({ messages, summary, voiceNotes, imageMemories = [], 
   const sevenDaysAgo = Date.now() - 7 * getDayMs();
   const timelineMessages = messages.filter((message) => message.createdAt >= sevenDaysAgo).slice(-30).reverse();
   const timelineVoice = voiceNotes.filter((note) => note.createdAt >= sevenDaysAgo);
+  const timelineImages = imageMemories.filter((img) => img.createdAt >= sevenDaysAgo);
 
   const totalTokenEstimate = useMemo(
     () => messages.reduce((sum, message) => sum + estimateTokens(message.content), 0) + transcriptMemories.reduce((sum, text) => sum + estimateTokens(text), 0),
@@ -85,7 +94,7 @@ export const MemoryPage = ({ messages, summary, voiceNotes, imageMemories = [], 
   }, [messages]);
 
   return (
-    <section className="panel">
+    <section className="panel settings-panel">
       <h2>Memory</h2>
       <p className="helper-text">Timeline + pinned snippets make memory behavior visible and trustworthy.</p>
 
@@ -99,6 +108,10 @@ export const MemoryPage = ({ messages, summary, voiceNotes, imageMemories = [], 
           <li>
             <strong>{voiceNotes.length}</strong>
             <span>Voice notes</span>
+          </li>
+          <li>
+            <strong>{imageMemories.length}</strong>
+            <span>Image memories</span>
           </li>
           <li>
             <strong>{messages.length}</strong>
@@ -119,8 +132,31 @@ export const MemoryPage = ({ messages, summary, voiceNotes, imageMemories = [], 
       <article className="card">
         <h3>Memory Timeline (last 7 days)</h3>
         <ul className="memory-list compact">
-          {timelineMessages.length || timelineVoice.length ? (
+          {timelineMessages.length || timelineVoice.length || timelineImages.length ? (
             <>
+              {timelineImages.map((img) => (
+                <li key={`img-${img.id}`}>
+                  <strong>{new Date(img.createdAt).toLocaleString()} · image</strong>
+                  <div className="memory-image-row">
+                    <img
+                      src={URL.createObjectURL(img.blob)}
+                      alt={img.caption || 'Memory image'}
+                      className="memory-thumb"
+                      onClick={() => setExpandedImageId(expandedImageId === img.id ? null : img.id)}
+                    />
+                    <span>{img.caption || img.analysisSummary || 'No description'}</span>
+                  </div>
+                  {expandedImageId === img.id ? (
+                    <div className="memory-image-expanded">
+                      <img src={URL.createObjectURL(img.blob)} alt={img.caption || 'Memory image'} className="memory-image-full" />
+                      {img.notes ? <p className="helper-text">{img.notes}</p> : null}
+                      {onDeleteImageMemory ? (
+                        <button className="ghost danger" onClick={() => void onDeleteImageMemory(img.id)}>Delete image</button>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </li>
+              ))}
               {timelineMessages.map((message) => (
                 <li key={message.id}>
                   <strong>
@@ -146,6 +182,37 @@ export const MemoryPage = ({ messages, summary, voiceNotes, imageMemories = [], 
           )}
         </ul>
       </article>
+
+      {/* Image memories gallery */}
+      {imageMemories.length > 0 ? (
+        <article className="card">
+          <h3>Image Memories ({imageMemories.length})</h3>
+          <div className="image-memory-grid">
+            {imageMemories.map((img) => (
+              <div key={img.id} className="image-memory-tile">
+                <img
+                  src={URL.createObjectURL(img.blob)}
+                  alt={img.caption || 'Memory image'}
+                  className="image-memory-tile-img"
+                  onClick={() => setExpandedImageId(expandedImageId === img.id ? null : img.id)}
+                />
+                <p className="image-memory-tile-label">{img.caption || img.analysisSummary || 'Untitled'}</p>
+                {expandedImageId === img.id ? (
+                  <div className="memory-image-expanded">
+                    <img src={URL.createObjectURL(img.blob)} alt={img.caption || 'Memory image'} className="memory-image-full" />
+                    {img.analysisSummary ? <p className="helper-text"><strong>Analysis:</strong> {img.analysisSummary}</p> : null}
+                    {img.notes ? <p className="helper-text"><strong>Notes:</strong> {img.notes}</p> : null}
+                    <p className="helper-text">{new Date(img.createdAt).toLocaleString()} · {img.source}</p>
+                    {onDeleteImageMemory ? (
+                      <button className="ghost danger" onClick={() => void onDeleteImageMemory(img.id)}>Delete image</button>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </article>
+      ) : null}
 
       <article className="card">
         <h3>Pinned Memories</h3>
@@ -190,20 +257,20 @@ export const MemoryPage = ({ messages, summary, voiceNotes, imageMemories = [], 
       </article>
 
       <article className="card">
-          <h3>Voice Notes ({voiceNotes.length})</h3>
-          <ul className="memory-list compact">
-            {voiceNotes.length ? voiceNotes.map((note) => (
-              <li key={note.id}>
-                <strong>{new Date(note.createdAt).toLocaleString()}</strong>
-                <audio controls src={URL.createObjectURL(note.audioBlob)} />
-                <span>{note.transcript ? `Transcript: ${snippet(note.transcript)}` : 'No transcript available.'}</span>
-                <button className="ghost danger" onClick={() => void onDeleteVoiceNote(note.id)}>Delete</button>
-              </li>
-            )) : (
-              <li>
-                <span className="helper-text">No voice notes stored yet.</span>
-              </li>
-            )}
+        <h3>Voice Notes ({voiceNotes.length})</h3>
+        <ul className="memory-list compact">
+          {voiceNotes.length ? voiceNotes.map((note) => (
+            <li key={note.id}>
+              <strong>{new Date(note.createdAt).toLocaleString()}</strong>
+              <audio controls src={URL.createObjectURL(note.audioBlob)} />
+              <span>{note.transcript ? `Transcript: ${snippet(note.transcript)}` : 'No transcript available.'}</span>
+              <button className="ghost danger" onClick={() => void onDeleteVoiceNote(note.id)}>Delete</button>
+            </li>
+          )) : (
+            <li>
+              <span className="helper-text">No voice notes stored yet.</span>
+            </li>
+          )}
         </ul>
       </article>
     </section>

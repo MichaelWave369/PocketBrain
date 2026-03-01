@@ -4,6 +4,16 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(({ mode }) => ({
   base: mode === 'production' ? '/PocketBrain/' : '/',
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom'],
+          'vendor-router': ['react-router-dom']
+        }
+      }
+    }
+  },
   plugins: [
     react(),
     VitePWA({

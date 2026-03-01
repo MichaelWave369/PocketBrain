@@ -5,6 +5,16 @@ export default defineConfig(function (_a) {
     var mode = _a.mode;
     return ({
         base: mode === 'production' ? '/PocketBrain/' : '/',
+        build: {
+            rollupOptions: {
+                output: {
+                    manualChunks: {
+                        'vendor-react': ['react', 'react-dom'],
+                        'vendor-router': ['react-router-dom']
+                    }
+                }
+            }
+        },
         plugins: [
             react(),
             VitePWA({
