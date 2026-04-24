@@ -37,12 +37,17 @@ const truncateToBudget = (parts: string[]): string => {
 
 const formatMessage = (message: ChatMessage): string => `${message.role}: ${message.content}`;
 
+export interface RetrievalOptions {
+  draft?: string;
+  extraMemories?: string[];
+}
+
 export const retrieveContext = (
   messages: ChatMessage[],
   summary: MemorySummary | null,
-  draft = '',
-  extraMemories: string[] = []
+  options: RetrievalOptions = {}
 ): string => {
+  const { draft = '', extraMemories = [] } = options;
   const recent = messages.slice(-RECENT_TURNS);
   const sections: string[] = [];
 

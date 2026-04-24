@@ -122,7 +122,7 @@ export const ChatPage = ({
   };
 
   const contextPreview = useMemo(
-    () => retrieveContext(messages, summary, draft, [...transcriptMemories, ...imageMemoryTexts]),
+    () => retrieveContext(messages, summary, { draft, extraMemories: [...transcriptMemories, ...imageMemoryTexts] }),
     [messages, summary, draft, transcriptMemories, imageMemoryTexts]
   );
 
@@ -146,7 +146,7 @@ export const ChatPage = ({
     try {
       const request: ProviderGenerateRequest = {
         systemPrompt: SYSTEM_PROMPT,
-        context: retrieveContext(messages, summary, content, [...transcriptMemories, ...imageMemoryTexts]),
+        context: retrieveContext(messages, summary, { draft: content, extraMemories: [...transcriptMemories, ...imageMemoryTexts] }),
         userInput: content
       };
 

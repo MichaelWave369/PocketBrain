@@ -1,14 +1,34 @@
-# PocketBrain v0.5.0
+# PocketBrain v0.6.0
+
+PocketBrain is a private, phone-first, local-first AI brain that runs in the browser, stores memory locally, and supports optional user-controlled bridge mode for stronger models.
 
 PocketBrain is a **private, phone-first, local-first AI brain**.
 
 It prioritizes on-device memory and retrieval, with optional user-controlled bridge mode when you want a stronger remote model.
+
+Built by Michael Hughes / PHI369 Labs.
+
+
+## What's new in v0.6.0
+- Lazy-loaded WebLLM and chunked bundles for faster initial startup.
+- Camera/image memory UX improvements and timeline support.
+- Device sync UX upgrades including QR pairing and manual sync controls.
+- Built-in TTS controls with browser fallback behavior.
 
 ## 🚀 Try PocketBrain
 
 **[Launch PocketBrain](https://michaelwave369.github.io/PocketBrain)** - Runs entirely in your browser. No signup, no tracking.
 
 **Want to self-host?** Clone the repo and run `npm ci && npm run dev`
+
+## Portfolio Highlights
+- Local-first browser AI app
+- IndexedDB private memory loop
+- WebLLM local provider support
+- Optional Ollama/OpenAI-compatible bridge mode
+- Encrypted backup/restore with Web Crypto
+- PWA install support
+- TypeScript/Vite production build
 
 ## Core product behavior
 - **Local-first by default**: WebLLM runs in-browser, memory stays in IndexedDB.
@@ -87,7 +107,7 @@ npm run verify
 No hidden telemetry. Bridge mode sends prompts only to endpoints you explicitly configure.
 
 ## License
-Apache-2.0
+MIT
 
 ## Getting Started
 

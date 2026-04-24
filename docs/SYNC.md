@@ -1,4 +1,4 @@
-# Private Device Sync v0.5.0
+# Private Device Sync v0.6.0
 
 PocketBrain sync is pairing-first and device-trust based.
 
