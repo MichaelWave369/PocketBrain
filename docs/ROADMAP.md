@@ -1,6 +1,6 @@
 # Roadmap
 
-## Shipped (v0.5.0)
+## Shipped (v0.6.0)
 - Local WebLLM and bridge provider routing
 - Voice input + local note fallback
 - Pairing-first bridge setup

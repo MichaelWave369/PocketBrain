@@ -1,4 +1,4 @@
-# TTS in PocketBrain v0.5.0
+# TTS in PocketBrain v0.6.0
 
 PocketBrain uses the browser SpeechSynthesis API for voice output.
 
