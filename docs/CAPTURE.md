@@ -1,4 +1,4 @@
-# Capture & Image Memory v0.5.0
+# Capture & Image Memory v0.6.0
 
 PocketBrain can ingest images from camera or file upload.
 
