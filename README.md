@@ -10,6 +10,15 @@ Built by Michael Hughes / PHI369 Labs.
 - Device sync UX upgrades including QR pairing and manual sync controls.
 - Built-in TTS controls with browser fallback behavior.
 
+Built by Michael Hughes / PHI369 Labs.
+
+
+## What's new in v0.6.0
+- Lazy-loaded WebLLM and chunked bundles for faster initial startup.
+- Camera/image memory UX improvements and timeline support.
+- Device sync UX upgrades including QR pairing and manual sync controls.
+- Built-in TTS controls with browser fallback behavior.
+
 ## 🚀 Try PocketBrain
 
 **[Launch PocketBrain](https://michaelwave369.github.io/PocketBrain)** - Runs entirely in your browser. No signup, no tracking.
