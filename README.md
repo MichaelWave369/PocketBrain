@@ -2,6 +2,8 @@
 
 PocketBrain is a private, phone-first, local-first AI brain that runs in the browser, stores memory locally, and supports optional user-controlled bridge mode for stronger models.
 
+PocketBrain is a private, phone-first, local-first AI brain that runs in the browser, stores memory locally, and supports optional user-controlled bridge mode for stronger models.
+
 PocketBrain is a **private, phone-first, local-first AI brain**.
 
 It prioritizes on-device memory and retrieval, with optional user-controlled bridge mode when you want a stronger remote model.
