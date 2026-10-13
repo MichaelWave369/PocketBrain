@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'public/pocketbrain-tiny.mjs'
+      - 'public/pocketbrain-tiny-metrics.mjs'
       - 'public/tiny-lab.*'
       - 'public/tiny-model.json'
       - 'docs/TINY_LAB.md'
@@ -16,6 +17,7 @@ on:
     branches: [main]
     paths:
       - 'public/pocketbrain-tiny.mjs'
+      - 'public/pocketbrain-tiny-metrics.mjs'
       - 'public/tiny-lab.*'
       - 'public/tiny-model.json'
       - 'tests/tiny-lab.test.mjs'
