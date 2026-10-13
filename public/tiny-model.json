@@ -1,19 +1,32 @@
 {
-  "schema": "POCKETBRAIN_TINY_MODEL_MANIFEST_V1",
-  "status": "EXPERIMENTAL_UNVERIFIED_BROWSER_INFERENCE",
+  "schema": "POCKETBRAIN_TINY_MODEL_MANIFEST_V2",
+  "status": "EXPERIMENTAL_BROWSER_SELF_REPORTED",
   "base_model": "HuggingFaceTB/SmolLM2-135M-Instruct",
   "browser_model": "onnx-community/SmolLM2-135M-Instruct-ONNX-GQA",
   "model_license": "Apache-2.0",
   "runtime": "@huggingface/transformers@3.8.1",
   "runtime_source": "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1",
   "versions_frozen": false,
+  "options": {
+    "baseline": {
+      "do_sample": false,
+      "repetition_penalty": 1,
+      "no_repeat_ngram_size": 0
+    },
+    "guarded": {
+      "do_sample": false,
+      "repetition_penalty": 1.12,
+      "no_repeat_ngram_size": 3
+    }
+  },
   "gpu_variant": "onnx/model_q4f16.onnx",
-  "gpu_variant_expected_sha256_from_publisher": "cc15aad71afc7b73544360a2ce8785b17d3cb5933c5375f6591fd8646ebf9979",
   "cpu_variant": "onnx/model_quantized.onnx",
   "artifact_sha256_enforced": false,
   "weight_bytes_bundled": false,
   "local_phistream_safetensors_reused": false,
   "model_first_download_requires_network": true,
   "client_prompt_uploaded_for_inference": false,
-  "production_ready": false
+  "production_ready": false,
+  "real_v02_browser_smoke_test": "NOT_YET_RECORDED",
+  "external_reference_parity": "NOT_TESTED"
 }
