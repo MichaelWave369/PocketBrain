@@ -149,3 +149,8 @@ Try the optional [Tiny Model Lab](https://michaelwave369.github.io/PocketBrain/t
 See [Tiny Lab documentation](docs/TINY_LAB.md) for provenance, privacy/consent boundaries, and promotion gates. Run `npm run test:tiny` for contract tests (which are not model inference tests).
 
 **Tiny v0.2 candidate:** the lab now offers live model text previews, baseline/guarded decoding comparisons, and copyable local callback-based inference receipts. Try both modes on an identical prompt and inspect the actual outputs and measurements. The `generateWithReceipt(prompt, { mode, onText })` API is an experimental reusable adapter; it is not yet promoted as a stable SDK. Source CI does not test pretrained weights.
+
+
+## PocketBrain Tiny SDK candidate (experimental)
+
+A small reusable browser client is now being tested at `public/sdk/v0.1/index.mjs`. It enforces explicit model load, one-generation-at-a-time behavior, status receipts, and disposal, while reusing the real ONNX adapter. Start with the [consumer demo](https://michaelwave369.github.io/PocketBrain/tiny-sdk-demo.html) after merge/deploy, or inspect [SDK details](docs/TINY_SDK_CANDIDATE.md). No other repo is automatically modified. This is not an immutable production SDK yet.

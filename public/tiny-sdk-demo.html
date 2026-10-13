@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PocketBrain Tiny SDK · Consumer Demo</title>
+  <style>
+    :root { color-scheme: dark; font: 16px/1.5 system-ui,sans-serif; background: #07101c; color: #e5f0ff; }
+    body { margin: 0; padding: 2rem 1rem; } main { max-width: 700px; margin: auto; }
+    article { padding: 1.2rem; border: 1px solid #304660; border-radius: 14px; background: #101f31; margin: 1rem 0; }
+    a { color: #9cceff; }
+    button { background: #80c8fa; color: #081424; border: none; padding: .7rem 1rem; border-radius: 8px; font: inherit; font-weight: 700; }
+    button:disabled { opacity: .4; }
+    textarea { width: 100%; box-sizing: border-box; padding: .7rem; border-radius: 8px; background: #061524; color: white; font: inherit; }
+    output, pre { display: block; white-space: pre-wrap; overflow-wrap: anywhere; background: #071424; padding: .7rem; border-radius: 8px; }
+    .muted { color: #b1c3d9; }
+  </style>
+</head>
+<body>
+<main>
+  <a href="./">← PocketBrain</a>
+  <h1>PocketBrain Tiny SDK · Consumer Demo</h1>
+  <p class="muted">This is a separate, experimental consumer of our reusable SDK candidate. It does not affect PocketBrain chat, Vessie routing, or any other repo.</p>
+  <article>
+    <h2>1. Explicit model permission</h2>
+    <p>Loading fetches executable Transformers.js from jsDelivr and SmolLM2 ONNX/tokenizer assets from Hugging Face. No model or inference service is contacted until you click Load. Prompts are processed locally after loading.</p>
+    <button id="sdk-load">Load local AI</button>
+    <p id="sdk-status" role="status">Idle · no download started</p>
+  </article>
+  <article>
+    <h2>2. Call the SDK</h2>
+    <label for="sdk-prompt">Prompt</label>
+    <textarea id="sdk-prompt" rows="3" maxlength="4000">In one sentence, explain how a person and a small AI can collaborate.</textarea>
+    <p><button id="sdk-generate" disabled>Generate through SDK</button></p>
+    <output id="sdk-output">Load the model first.</output>
+    <h3>Evidence receipt</h3>
+    <pre id="sdk-receipt">No model generation yet.</pre>
+  </article>
+  <p class="muted">Model: ONNX SmolLM2-135M derivative. No external-reference parity or production SDK stability claimed. Runtime and model downloads are external; caching is browser-dependent.</p>
+</main>
+<script type="module" src="./tiny-sdk-demo.mjs"></script>
+</body>
+</html>
