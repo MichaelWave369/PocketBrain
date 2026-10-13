@@ -77,6 +77,11 @@ export const SettingsPage = ({
       <article className="card">
         <p className="helper-text">Bridge sends prompts to stronger models. Sync shares your PocketBrain data across trusted devices.</p>
       </article>
+      <article className="card">
+        <h3>PocketBrain Tiny · Experimental</h3>
+        <p className="helper-text">Test a separate opt-in 135M-parameter model in the browser. Initial load downloads executable runtime and ONNX weights from external hosts. Existing local WebLLM remains the default.</p>
+        <a href={`${import.meta.env.BASE_URL}tiny-lab.html`}>Open Tiny Model Lab</a>
+      </article>
 
       <article className="card">
         <label className="settings-row">

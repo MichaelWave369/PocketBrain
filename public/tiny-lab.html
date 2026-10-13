@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PocketBrain Tiny | Local Model Lab</title>
+  <style>
+    :root { color-scheme: dark; font: 16px/1.5 system-ui, sans-serif; background: #070f21; color: #e7eefb; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 2rem 1rem; }
+    main { max-width: 730px; margin: auto; }
+    h1 { font-size: clamp(1.8rem, 4vw, 2.4rem); margin-bottom: .1rem; }
+    p { color: #b5c4df; }
+    .panel { border: 1px solid #293b57; background: #0f1c32; border-radius: 16px; padding: 1.2rem; margin-top: 1rem; }
+    .tag { color: #9ad5ff; text-transform: uppercase; letter-spacing: .14em; font-size: .75rem; font-weight: 700; }
+    label { display: block; margin: .8rem 0 .35rem; font-weight: 600; }
+    textarea, select { width: 100%; background: #061325; border: 1px solid #45607e; border-radius: 8px; padding: .75rem; color: inherit; font: inherit; }
+    textarea { min-height: 100px; resize: vertical; }
+    button { border: 0; border-radius: 10px; padding: .75rem 1.1rem; background: #60bafa; color: #061221; font: inherit; font-weight: 750; cursor: pointer; }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    #reply { min-height: 6em; white-space: pre-wrap; overflow-wrap: anywhere; }
+    #status { font-size: .9rem; color: #bfe0ff; }
+    #progress { width: 100%; accent-color: #60bafa; }
+    a { color: #8dd5ff; }
+    small { color: #aebed7; }
+  </style>
+</head>
+<body>
+<main>
+  <a href="./">← PocketBrain</a>
+  <p class="tag">Experimental · Local inference</p>
+  <h1>PocketBrain Tiny</h1>
+  <p>Try a real 135M-parameter pretrained model in your browser. This is a separate opt-in lab, not PocketBrain's default chat provider.</p>
+  <section class="panel">
+    <h2>1. Explicitly load the model</h2>
+    <p>Clicking Load contacts <strong>jsDelivr</strong> for the inference runtime and <strong>Hugging Face</strong> for model/tokenizer files. The first download can exceed 100 MB. The files may be cached by your browser, subject to storage limits. Your typed prompt is processed locally.</p>
+    <label for="device">Execution backend</label>
+    <select id="device">
+      <option value="auto">Auto (WebGPU if available, otherwise CPU/WASM)</option>
+      <option value="webgpu">WebGPU (q4f16)</option>
+      <option value="wasm">CPU/WASM (q8, can be slow)</option>
+    </select>
+    <p><button id="load">Load real model</button></p>
+    <p id="status" role="status" aria-live="polite">Not loaded. No model download has started.</p>
+    <progress id="progress" max="100" value="0" hidden></progress>
+  </section>
+  <section class="panel">
+    <h2>2. Generate locally</h2>
+    <label for="prompt">Prompt</label>
+    <textarea id="prompt" maxlength="4000" placeholder="Give me three names for a forest village." spellcheck="true"></textarea>
+    <p><button id="generate" disabled>Generate (max 64 tokens)</button></p>
+    <h3>Model output</h3>
+    <output id="reply" aria-live="polite">Load the model to enable generation.</output>
+    <p><small id="metrics"></small></p>
+  </section>
+  <section class="panel">
+    <h2>Evidence boundary</h2>
+    <p>SmolLM2 here is a browser-ready ONNX derivative of the same model family used in PhiStream experiments, <strong>not</strong> your D: drive BF16 safetensors. No PhiStream parity, latency superiority, or cross-device reliability is claimed. Model outputs can be wrong.</p>
+    <p><a href="https://huggingface.co/onnx-community/SmolLM2-135M-Instruct-ONNX-GQA" rel="noopener noreferrer" target="_blank">Model details</a> · <a href="https://huggingface.co/HuggingFaceTB/SmolLM2-135M-Instruct" rel="noopener noreferrer" target="_blank">Original weights and Apache-2.0 license</a></p>
+  </section>
+</main>
+<script type="module" src="./tiny-lab.mjs"></script>
+</body>
+</html>

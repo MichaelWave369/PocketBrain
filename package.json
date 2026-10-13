@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "tsc --noEmit",
-    "verify": "npm run lint && npm run build && node scripts/verify-integrations.mjs"
+    "verify": "npm run lint && npm run build && node scripts/verify-integrations.mjs && npm run test:tiny",
+    "test:tiny": "node --test tests/tiny-lab.test.mjs"
   },
   "dependencies": {
     "@mlc-ai/web-llm": "^0.2.79",

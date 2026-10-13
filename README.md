@@ -140,3 +140,10 @@ First run: Click "Get started" to configure your AI brain (local or bridge mode)
 - Offline-capable - Works without internet (except bridge mode)
 - PWA - Install on your phone like a native app
 - Open source - Full transparency and control
+
+
+## PocketBrain Tiny (experimental browser lab)
+
+Try the optional [Tiny Model Lab](https://michaelwave369.github.io/PocketBrain/tiny-lab.html) to initialize a real SmolLM2-135M ONNX derivative on demand. This is a **separate research lab**, not yet a new default chat provider or validated portable SDK. The original PhiStream BF16 checkpoint is not bundled or loaded. No new inference dependency is included in the main app; the experimental page explicitly downloads a versioned browser runtime and model artifacts only after clicking **Load real model**.
+
+See [Tiny Lab documentation](docs/TINY_LAB.md) for provenance, privacy/consent boundaries, and promotion gates. Run `npm run test:tiny` for contract tests (which are not model inference tests).
