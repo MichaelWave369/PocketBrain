@@ -5,6 +5,10 @@ on:
     paths:
       - 'public/pocketbrain-tiny.mjs'
       - 'public/pocketbrain-tiny-metrics.mjs'
+      - 'public/sdk/**'
+      - 'public/tiny-sdk-demo.*'
+      - 'tests/tiny-sdk.test.mjs'
+      - 'docs/TINY_SDK_CANDIDATE.md'
       - 'public/tiny-lab.*'
       - 'public/tiny-model.json'
       - 'docs/TINY_LAB.md'
