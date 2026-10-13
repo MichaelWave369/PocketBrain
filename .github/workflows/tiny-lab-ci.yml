@@ -1,0 +1,41 @@
+name: PocketBrain Tiny contract checks
+
+on:
+  pull_request:
+    paths:
+      - 'public/pocketbrain-tiny.mjs'
+      - 'public/tiny-lab.*'
+      - 'public/tiny-model.json'
+      - 'docs/TINY_LAB.md'
+      - 'tests/tiny-lab.test.mjs'
+      - 'src/pages/SettingsPage.tsx'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/tiny-lab-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'public/pocketbrain-tiny.mjs'
+      - 'public/tiny-lab.*'
+      - 'public/tiny-model.json'
+      - 'tests/tiny-lab.test.mjs'
+      - 'src/pages/SettingsPage.tsx'
+      - 'package.json'
+      - '.github/workflows/tiny-lab-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  source-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - run: npm run verify
+      - name: Explicit evidence boundary
+        run: echo 'Source/build/contract checks only. No pretrained weights were downloaded or executed.'
