@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { AppSettings } from '../types';
 
 type ModeChoice = 'local' | 'bridge';
-type BridgePreset = 'ollama-localhost' | 'openai-compatible';
+type BridgePreset = 'ollama-localhost' | 'openai-compatible' | 'phiserve-loopback';
 
 interface FirstRunFlowProps {
   onComplete: (patch: Partial<AppSettings>) => Promise<void>;
@@ -21,7 +21,15 @@ export const FirstRunFlow = ({ onComplete }: FirstRunFlowProps) => {
         await onComplete({ localOnlyMode: true, providerType: 'local-webllm' });
       } else {
         const presetPatch: Partial<AppSettings> =
-          bridgePreset === 'ollama-localhost'
+          bridgePreset === 'phiserve-loopback'
+            ? {
+                localOnlyMode: false,
+                providerType: 'phiserve-bridge',
+                bridgeEndpointUrl: 'http://127.0.0.1:11435',
+                bridgeModelName: '',
+                bridgeApiKey: ''
+              }
+            : bridgePreset === 'ollama-localhost'
             ? {
                 localOnlyMode: false,
                 providerType: 'ollama-bridge',
@@ -91,6 +99,7 @@ export const FirstRunFlow = ({ onComplete }: FirstRunFlowProps) => {
               <span>Bridge preset</span>
               <select value={bridgePreset} onChange={(event) => setBridgePreset(event.target.value as BridgePreset)}>
                 <option value="ollama-localhost">Ollama on localhost (http://localhost:11434)</option>
+                <option value="phiserve-loopback">PhiServe on same device (token required)</option>
                 <option value="openai-compatible">OpenAI-compatible endpoint</option>
               </select>
             </label>
