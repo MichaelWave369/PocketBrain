@@ -1,16 +1,19 @@
 import { LocalWebLlmProvider } from './localWebllmProvider';
 import { OllamaProvider } from './ollamaProvider';
 import { OpenAiCompatibleProvider } from './openaiCompatibleProvider';
+import { PhiServeProvider } from './phiServeProvider';
 import type { ChatProvider, ProviderSettings, ProviderType } from './types';
 
 const localProvider = new LocalWebLlmProvider();
 const ollamaProvider = new OllamaProvider();
 const openAiProvider = new OpenAiCompatibleProvider();
+const phiServeProvider = new PhiServeProvider();
 
 const providers: Record<ProviderType, ChatProvider> = {
   'local-webllm': localProvider,
   'ollama-bridge': ollamaProvider,
-  'openai-compatible-bridge': openAiProvider
+  'openai-compatible-bridge': openAiProvider,
+  'phiserve-bridge': phiServeProvider
 };
 
 export const getProvider = (providerType: ProviderSettings['type']): ChatProvider => providers[providerType];
@@ -21,5 +24,6 @@ export const getProviderOptions = () =>
   [
     { value: 'local-webllm', label: 'Local WebLLM' },
     { value: 'ollama-bridge', label: 'Ollama Bridge' },
-    { value: 'openai-compatible-bridge', label: 'OpenAI-Compatible Bridge' }
+    { value: 'openai-compatible-bridge', label: 'OpenAI-Compatible Bridge' },
+    { value: 'phiserve-bridge', label: 'PhiServe (same-device local bridge)' }
   ] as const;

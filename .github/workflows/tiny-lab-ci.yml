@@ -14,6 +14,9 @@ on:
       - 'docs/TINY_LAB.md'
       - 'tests/tiny-lab.test.mjs'
       - 'src/pages/SettingsPage.tsx'
+      - 'src/components/FirstRunFlow.tsx'
+      - 'src/providers/**'
+      - 'tests/phiserve-provider.test.mjs'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/tiny-lab-ci.yml'
@@ -26,6 +29,8 @@ on:
       - 'public/tiny-model.json'
       - 'tests/tiny-lab.test.mjs'
       - 'src/pages/SettingsPage.tsx'
+      - 'src/providers/**'
+      - 'tests/phiserve-provider.test.mjs'
       - 'package.json'
       - '.github/workflows/tiny-lab-ci.yml'
 

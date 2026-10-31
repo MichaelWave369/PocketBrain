@@ -63,7 +63,7 @@ export const SettingsPage = ({
   });
 
   const isBridgeProvider = settings.providerType !== 'local-webllm';
-  const bridgePlaceholder = settings.providerType === 'ollama-bridge' ? 'http://192.168.x.x:11434' : 'http://192.168.x.x:8000/v1';
+  const bridgePlaceholder = settings.providerType === 'phiserve-bridge' ? 'http://127.0.0.1:11435' : settings.providerType === 'ollama-bridge' ? 'http://192.168.x.x:11434' : 'http://192.168.x.x:8000/v1';
 
   const handleConnectionTest = async () => {
     const result = await onTestBridgeConnection();
@@ -115,13 +115,14 @@ export const SettingsPage = ({
             <input value={settings.bridgeModelName} onChange={(event) => onSettingsChange({ ...settings, bridgeModelName: event.target.value })} />
           </label>
           <label className="settings-field">
-            <span>API key (optional)</span>
+            <span>{settings.providerType === 'phiserve-bridge' ? 'PhiServe browser token (required)' : 'API key (optional)'}</span>
             <input type="password" value={settings.bridgeApiKey} onChange={(event) => onSettingsChange({ ...settings, bridgeApiKey: event.target.value })} />
           </label>
           <div className="settings-actions">
             <button className="ghost" onClick={() => void handleConnectionTest()}>Test Bridge Connection</button>
             {trustedBridgeEndpoints[0] ? <button className="ghost" onClick={() => onApplyPairing({ bridgeEndpointUrl: trustedBridgeEndpoints[0] })}>Reconnect recent endpoint</button> : null}
           </div>
+          {settings.providerType === 'phiserve-bridge' ? <p className="helper-text">PhiServe must run on this same device and explicitly trust this page's exact origin. Use a private token generated with phiserve auth create; a remote phone or headset cannot reach your desktop through 127.0.0.1. Browser local-network permissions may still block access.</p> : null}
           {connectionStatus ? <p className="helper-text">{connectionStatus}</p> : null}
         </article>
       ) : null}

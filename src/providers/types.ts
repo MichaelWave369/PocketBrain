@@ -1,6 +1,6 @@
 import type { ProgressReport } from '../model/webllmService';
 
-export type ProviderType = 'local-webllm' | 'ollama-bridge' | 'openai-compatible-bridge';
+export type ProviderType = 'local-webllm' | 'ollama-bridge' | 'openai-compatible-bridge' | 'phiserve-bridge';
 
 export interface ProviderSettings {
   type: ProviderType;

@@ -154,3 +154,18 @@ See [Tiny Lab documentation](docs/TINY_LAB.md) for provenance, privacy/consent b
 ## PocketBrain Tiny SDK candidate (experimental)
 
 A small reusable browser client is now being tested at `public/sdk/v0.1/index.mjs`. It enforces explicit model load, one-generation-at-a-time behavior, status receipts, and disposal, while reusing the real ONNX adapter. Start with the [consumer demo](https://michaelwave369.github.io/PocketBrain/tiny-sdk-demo.html) after merge/deploy, or inspect [SDK details](docs/TINY_SDK_CANDIDATE.md). No other repo is automatically modified. This is not an immutable production SDK yet.
+
+## PhiServe same-device browser bridge (experimental)
+
+PocketBrain offers a dedicated **PhiServe** provider. It uses the Ollama-style text API with a bearer token, bounded NDJSON streaming, and explicit cancellation. The local-memory / retrieval behavior remains unchanged; only compiled chat prompts are sent to the configured local daemon. This does **not** add an inference runtime to PocketBrain.
+
+Prerequisite: PhiServe **v0.5.0 or newer** with the opt-in, authenticated browser bridge (see PhiServe `docs/BROWSER_BRIDGE.md`).
+
+1. On the **same physical computer** as your browser, register a real GGUF model and provide a compatible `llama-server`.
+2. Generate a secret file with `phiserve auth create --output "$HOME/.phiserve/bridge-token.txt"`.
+3. Start `phiserve daemon --browser-origin https://michaelwave369.github.io --api-key-file "$HOME/.phiserve/bridge-token.txt" --llama-server /path/to/llama-server`. This still binds only to `127.0.0.1`.
+4. In PocketBrain Settings, choose **PhiServe (same-device local bridge)**, endpoint `http://127.0.0.1:11435`, a **registered PhiServe model alias**, and your private bearer token. Click **Test Bridge Connection**.
+
+**Browser caveat:** The browser may require local-network permission or block HTTPS-to-loopback requests. The bridge is not reachable from your phone, Quest, or another computer using `127.0.0.1`. A separate secure PhiOS gateway is future work. No remote LAN exposure has been introduced.
+
+**Security:** A token grants access to your local models. Avoid third-party code/extension access to the trusted browser origin, never place the token in the URL, and disable `remember bridge settings` when you do not want credentials stored locally in the browser. PhiServe does not support multimodal, tools, or transcription through this text-only adapter. CI tests use mocked HTTP responses, not physical CUDA/GGUF inference.
