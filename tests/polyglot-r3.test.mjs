@@ -5,7 +5,7 @@ import { openPocketBrainCourier } from '../public/polyglot-r3.mjs';
 
 const ROOT = new URL('./fixtures/', import.meta.url);
 const raw = await readFile(new URL('polyglot-r3-synthetic.json', ROOT), 'utf8');
-const publicPem = await readFile(new URL('polyglot-r3-public.pem', ROOT), 'utf8');
+const publicPem = await readFile(new URL('polyglot-r3-public-key.txt', ROOT), 'utf8');
 const password = 'synthetic-test-phrase-not-secret';
 const now = 1820000001;
 const options = { trustedSignerPublicPem: publicPem, passphrase: password, now };
