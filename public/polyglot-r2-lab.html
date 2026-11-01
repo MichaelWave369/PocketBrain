@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Φ Memory Polyglot | PocketBrain R2 Lab</title>
+<style>
+:root{color-scheme:dark;font-family:ui-sans-serif,system-ui,sans-serif;background:#090e1b;color:#edf2ff}
+*{box-sizing:border-box}body{margin:0;padding:24px;display:flex;justify-content:center}
+main{width:min(720px,100%)}.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.18em;color:#9bc5f8}
+h1{font-size:clamp(26px,5vw,42px);margin:8px 0 12px}p{line-height:1.55;color:#b5c5dc}
+article{border:1px solid #344560;background:#101b30;border-radius:18px;padding:20px;margin-top:24px}
+label{display:block;margin:14px 0;font-weight:650}
+input{max-width:100%;border:1px dashed #8cbcff;padding:14px;border-radius:12px;background:#14233b;color:#e9efff}
+button{padding:10px 18px;border:1px solid #6f9ddd;background:#1b355a;color:white;border-radius:8px;cursor:pointer}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#0b1426;padding:16px;border-radius:12px;max-height:260px;overflow:auto}
+dl{display:grid;grid-template-columns:auto 1fr;gap:8px 14px;overflow-wrap:anywhere}dt{color:#9bc5f8}dd{margin:0}
+small{display:block;color:#8fb5df}a{color:#abd0ff}#status{color:#bcd2ee}
+</style>
+</head>
+<body>
+<main>
+<div class="eyebrow">PocketBrain • Offline research lab</div>
+<h1>Φ Memory Polyglot R2</h1>
+<p>One canonical TMC memory, multiple governed reader views. This page only validates and previews a synthetic <strong>PocketBrain</strong> consumer envelope. Nothing is uploaded, saved, executed, or added to your chat context.</p>
+<article>
+  <strong>Experimental boundary</strong>
+  <p>Use synthetic test data only. This page checks JSON structure, not the identity of its sender, authorization, provenance or truth. A valid file is still unverified.</p>
+  <label for="file">Choose a synthetic R2 JSON envelope</label>
+  <input type="file" id="file" accept=".json,application/json">
+  <p id="status" role="status" aria-live="polite">No file loaded.</p>
+  <button id="clear" type="button">Clear preview</button>
+</article>
+<article id="preview" hidden>
+  <small>UNVERIFIED • READ ONLY • EPHEMERAL</small>
+  <h2>Memory lens preview</h2>
+  <dl><dt>Capsule</dt><dd id="capsule"></dd><dt>Fingerprint</dt><dd id="hash"></dd><dt>Tags</dt><dd id="tags"></dd><dt>Truncated</dt><dd id="truncated"></dd></dl>
+  <pre id="memory"></pre>
+</article>
+<p><small>Independent contracts only. No automatic TMC connection, account login, imports, memory storage, synchronization, or model prompts.</small></p>
+</main>
+<script type="module" src="./polyglot-r2-lab.mjs"></script>
+</body></html>
