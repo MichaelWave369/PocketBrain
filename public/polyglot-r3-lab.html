@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Φ Memory Polyglot R3 | Encrypted Courier Lab</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,Arial,sans-serif;background:#0a1020;color:#edf4ff}
+*{box-sizing:border-box}body{margin:0;padding:24px;display:flex;justify-content:center}
+main{max-width:760px;width:100%}h1{font-size:clamp(26px,5vw,40px);margin:10px 0}
+p{line-height:1.65;color:#c0cee6}.eyebrow{color:#9cc8ff;letter-spacing:.2em;font-size:12px;font-weight:700}
+section{border:1px solid #3b4f72;border-radius:16px;background:#121f36;padding:20px;margin:20px 0}
+label{display:block;margin:15px 0 8px;font-weight:650}input:not([type="checkbox"]){padding:10px;border:1px solid #708bb6;border-radius:8px;background:#101b30;color:white;max-width:100%;width:100%}
+button{padding:12px 16px;margin:8px 8px 0 0;border:1px solid #7ea5e8;background:#223e67;color:white;border-radius:9px;cursor:pointer}
+button:focus{outline:2px solid white}pre{white-space:pre-wrap;overflow-wrap:anywhere;padding:16px;border-radius:12px;background:#081426;max-height:400px;overflow-y:auto}
+small{color:#a7bfdc}#status{font-weight:600;color:#cfe1ff}a{color:#a9d4ff}
+</style>
+</head>
+<body><main>
+<div class="eyebrow">Φ369 • POCKETBRAIN • OFFLINE EXPERIMENT</div>
+<h1>Memory Polyglot R3</h1>
+<p>Signed, encrypted, recipient-specific memory couriers. One canonical source, no public TMC server. Files are processed locally in your browser with WebCrypto. This is a research lab, not yet approved for private memories.</p>
+<section>
+<h2>One-click synthetic demonstration</h2>
+<p>Generates a fresh temporary demonstration signing key, encrypts a fictional memory, verifies the signature, and decrypts it locally. The resulting signer is <strong>not</strong> a trusted TMC identity.</p>
+<button id="demo" type="button">Run synthetic courier demo</button>
+</section>
+<section>
+<h2>Inspect a synthetic courier package</h2>
+<p>You must independently verify the public signing key through a trusted channel. A PEM file from the same untrusted sender as the package is not enough.</p>
+<label for="package">Courier JSON file (synthetic only)</label>
+<input id="package" type="file" accept=".json,application/json">
+<label for="signer">Pinned signer public key (.pem)</label>
+<input id="signer" type="file" accept=".pem,.txt">
+<label for="passphrase">Out-of-band passphrase</label>
+<input id="passphrase" type="password" autocomplete="off">
+<label><input type="checkbox" id="pin-confirm"> I independently verified the signer public key</label>
+<button id="open" type="button">Verify and preview</button>
+<button id="clear" type="button">Clear memory preview</button>
+<p id="status" role="status" aria-live="polite">No courier opened.</p>
+</section>
+<section id="preview" hidden>
+<small>SIGNED PACKAGE • UNVERIFIED MEMORY CONTENT • NO PERSISTENCE</small>
+<h2>Decrypted preview</h2>
+<pre id="memory"></pre>
+</section>
+<p><small>No IndexedDB writes, prompts, uploads, tool calls, auto-sync or new TMC API routes. Successful decryption does not prove the memory is factually true. Offline files can be copied and replayed; expiry is an application check, not revocable encryption.</small></p>
+</main><script type="module" src="./polyglot-r3-lab.mjs"></script></body></html>
