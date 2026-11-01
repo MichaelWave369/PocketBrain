@@ -1,0 +1,10 @@
+{
+  "schema": "phi.memory.polyglot.courier.r3",
+  "reader": "pocketbrain",
+  "issued_at": 1820000000,
+  "expires_at": 1820000120,
+  "salt": "jVpDsMuqsBKpMzlrl8Vkxw",
+  "iv": "cpH5jRote5acNJj6",
+  "ciphertext": "FKahbOY4Cxkw3rhXWyM8zvGcWwyvuPNP4QZ32njWjkiJ9LNG-lo0iqOW_H068zrwDmo3rVfjhyv8ekcPQVvTDl_bUk6W_kY635mIIDaTXTEyLf7JYA4fpxb-QYq1Bv89AIJo1ZgwXIj33eziQQ0GYdnfZ94zqt8OO1YB6dIK3FzSEdVYvnT_G5kGtmBbUnPMK37PZCPa86mGffVicEh0Bz3GzFtOsuQpRCiuywBK-osh548ClkwDiu1jMJ_J-OGLk4-nIAP_OE3RvcVmwanqo2AYIADvrOxuhCg5qGROTRomLS9I3G0JdD6V269qUBb0J2lgNTmUw4huqbnwsKIlPjKkKFV7sdXFpDDxWfjUyUfRlHIZyLFi09g1CUI6nZTsUO1sgJTehYeM8XzRHvt5dcfsfJolUn-5RP_EMnPWXsZFXB05qne-dF55YwGGSJ2idFSd5LH8uuZEcXNyQ8XC3cXXoZx4oVIGhAWt1DtBmDPfOvHiVdlafPgczkbvIi5dhQM7_FXMa34pfBZwwn2yO8uA3_eYKtVr_cVsvJdI3XfQ_e6QkOPyWSYrnnxmfTiuC2WhRSB4pXAahV-5j0k",
+  "signature": "4Y2X5Gy-27buZWCg2EJgoxI1qMQIOREy7i-r2YDzUjibDT1P1jBJ8nfswOV5-U6LqsrmU2glcL1NOExblJ9k0g"
+}
