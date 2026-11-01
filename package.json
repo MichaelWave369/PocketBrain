@@ -8,10 +8,11 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "tsc --noEmit",
-    "verify": "npm run lint && npm run build && node scripts/verify-integrations.mjs && npm run test:tiny && npm run test:tiny-sdk && npm run test:phiserve",
+    "verify": "npm run lint && npm run build && node scripts/verify-integrations.mjs && npm run test:tiny && npm run test:tiny-sdk && npm run test:phiserve && npm run test:polyglot",
     "test:tiny": "node --test tests/tiny-lab.test.mjs",
     "test:tiny-sdk": "node --test tests/tiny-sdk.test.mjs",
-    "test:phiserve": "node --test tests/phiserve-provider.test.mjs"
+    "test:phiserve": "node --test tests/phiserve-provider.test.mjs",
+    "test:polyglot": "node --test tests/polyglot-r2.test.mjs"
   },
   "dependencies": {
     "@mlc-ai/web-llm": "^0.2.79",
