@@ -4,6 +4,7 @@ const links = [
   { to: '/', label: 'Chat' },
   { to: '/capture', label: 'Capture' },
   { to: '/memory', label: 'Memory' },
+  { to: '/council', label: 'Council' },
   { to: '/settings', label: 'Settings' }
 ];
 

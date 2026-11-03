@@ -210,9 +210,9 @@ button:disabled {
 
 .bottom-nav {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.5rem;
-  padding: 0.75rem;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.25rem;
+  padding: 0.5rem;
   border-top: 1px solid #1e293b;
   background: #020617;
 }
@@ -548,3 +548,10 @@ hr {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* PocketBrain Research Council: compact five-tab navigation and read-only cards */
+.bottom-nav-link { font-size: clamp(0.68rem, 2.7vw, 0.86rem); padding: 0.55rem 0.1rem; }
+.council-panel { overflow-y: auto; min-height: calc(100dvh - 185px); }
+.council-panel .card { overflow-wrap: anywhere; }
+.council-panel .card code { font-size: 0.78rem; }
+.council-panel .memory-list .card { margin-top: 0.35rem; }
