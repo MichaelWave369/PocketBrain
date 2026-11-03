@@ -169,3 +169,7 @@ Prerequisite: PhiServe **v0.5.0 or newer** with the opt-in, authenticated browse
 **Browser caveat:** The browser may require local-network permission or block HTTPS-to-loopback requests. The bridge is not reachable from your phone, Quest, or another computer using `127.0.0.1`. A separate secure PhiOS gateway is future work. No remote LAN exposure has been introduced.
 
 **Security:** A token grants access to your local models. Avoid third-party code/extension access to the trusted browser origin, never place the token in the URL, and disable `remember bridge settings` when you do not want credentials stored locally in the browser. PhiServe does not support multimodal, tools, or transcription through this text-only adapter. CI tests use mocked HTTP responses, not physical CUDA/GGUF inference.
+
+## Research Council E1 · Local Keyhole Observer
+
+The **Council** navigation tab (`/council`) now offers an [independent, read-only NBGPocketMesh E1 receipt viewer](docs/COUNCIL_E1_OBSERVER.md). A person manually selects a *public synthetic* JSON receipt (64 KiB max). The browser verifies strict ThinkTank/PocketBrain/Vessie roles, E0 lineage and per-record SHA-256 with Web Crypto, then shows a bounded review-only Keyhole contrast. It does not load WebLLM, send data to PhiServe or any cloud, save data to memory/sync, or grant tool/merge authority. **SIMULATED; source commits declared but not authenticated; no scientific evidence claim.** Run `npm run test:council` or `npm run verify`.
