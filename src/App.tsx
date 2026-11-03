@@ -43,6 +43,7 @@ const ChatPage = lazy(() => import('./pages/ChatPage').then((m) => ({ default: m
 const CapturePage = lazy(() => import('./pages/CapturePage').then((m) => ({ default: m.CapturePage })));
 const MemoryPage = lazy(() => import('./pages/MemoryPage').then((m) => ({ default: m.MemoryPage })));
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })));
+const CouncilPage = lazy(() => import('./pages/CouncilPage').then((m) => ({ default: m.CouncilPage })));
 
 const DEFAULT_SETTINGS: AppSettings = {
   localOnlyMode: true,
@@ -439,6 +440,10 @@ export const App = () => {
               />
             </Suspense>
           }
+        />
+        <Route
+          path="/council"
+          element={<Suspense fallback={<PageFallback />}><CouncilPage /></Suspense>}
         />
         <Route
           path="/settings"
