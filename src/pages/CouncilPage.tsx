@@ -87,8 +87,8 @@ export const CouncilPage = () => {
             {preview.seats.map((seat) => (
               <li className="card" key={seat.project}>
                 <strong>{seat.project}</strong>
-                <span>{seat.role.replaceAll('_', ' ')}</span>
-                <span>{seat.action.replaceAll('_', ' ')}</span>
+                <span>{seat.role.replace(/_/g, ' ')}</span>
+                <span>{seat.action.replace(/_/g, ' ')}</span>
                 <small>Declared revision: <code>{seat.sourceSha.slice(0, 12)}</code></small>
               </li>
             ))}
